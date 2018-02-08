@@ -50,7 +50,7 @@ impl Default for GameState {
     fn default() -> GameState {
         GameState {
             _exit: false,
-            _continue_compute: true,
+            _continue_compute: false,
             _time_game: 0.0,
             _is_init_run_first_time: false,
         }
@@ -59,6 +59,7 @@ impl Default for GameState {
 
 #[derive(Copy, Clone, Debug)]
 pub struct GameStateChangePending {
+    
 }
 
 impl Default for GameStateChangePending {
@@ -70,57 +71,174 @@ impl Default for GameStateChangePending {
 
 #[derive(Copy, Clone, Debug)]
 pub struct GameStateChangeApply {
+    _end_compute: bool,
 }
 
 impl Default for GameStateChangeApply {
     fn default() -> GameStateChangeApply {
         GameStateChangeApply {
+            _end_compute: false,
         }
     }
 }
 
 impl From< ComputeUnit > for GameStateChangeApply {
     fn from( _c: ComputeUnit ) -> Self {
-        unimplemented!();
+        match _c {
+            ComputeUnit::SignalEndCompute => {
+                Self {
+                    _end_compute: true
+                }
+            },
+            _ => {
+                Default::default()
+            },
+        }
     }
 }
 
-pub struct ComputeUnit {
-
+#[derive(Clone)]
+pub enum ComputeUnit {
+    SignalEndCompute,
+    TBD,
 }
 
+#[derive(Clone)]
 pub struct ComputeSchedule {
-
+    _compute_units: Vec< ComputeUnit >,
+    _index: usize,
 }
 
 impl IScheduler for ComputeSchedule {
     type Item = ComputeUnit;
     fn new( _items: &[Self::Item] ) -> ComputeSchedule {
-        unimplemented!();
+        ComputeSchedule {
+            _compute_units: _items.to_vec(),
+            _index: 0,
+        }
     }
 }
 
 impl Iterator for ComputeSchedule {
     type Item = Vec< ComputeUnit >;
     fn next( & mut self ) -> Option< Self::Item > {
-        unimplemented!();
+        if self._index >= self._compute_units.len() {
+            None
+        } else {
+            //todo
+            let s = Some( vec![ self._compute_units[ self._index ].clone() ] );
+            self._index += 1;
+            s
+        }
     }
 }
 
 impl From< (GameState, GameStateChangeApply) > for GameState {
     fn from( (_s, _a): (GameState, GameStateChangeApply) ) -> Self {
-        Default::default()
+        //todo
+        let mut s = _s.clone();
+        if _a._end_compute {
+            s._continue_compute = false;
+        }
+        s
     }
 }
 
-pub struct RenderObj {
-
+pub enum RenderObj {
+    InitialRender { _path_shader_vs: String, _path_shader_fs: String },
+    TestGeometry { _time_game: f32, _light: light::LightAdsPoint, _camera: camera::Cam },
 }
 
 
-impl From< RenderObj > for renderer_gl::Event {
+impl From< RenderObj > for Vec< renderer_gl::Event > {
     fn from( _r: RenderObj ) -> Self {
-        unimplemented!();
+        match _r {
+            RenderObj::InitialRender{ _path_shader_vs, _path_shader_fs } => {
+                let mut render_events = vec![];
+                
+                info!("game logic: first time initialization.");
+
+                let vs_src = file_open( _path_shader_vs.as_str() ).expect("vertex shader not retrieved");
+                let fs_src = file_open( _path_shader_fs.as_str() ).expect("fragment shader not retrieved");
+                let event_load_shader = renderer_gl::Event::LoadShader(
+                    vec![
+                        ( vs_src, util_gl::ShaderType::VERTEX ),
+                        ( fs_src, util_gl::ShaderType::FRAGMENT ),
+                    ] );
+                render_events.push( event_load_shader );
+
+                let img = image::open( &Path::new( "core/asset/images/texture0.jpg" ) ).unwrap();
+                debug!( "image dimension: {:?}", img.dimensions() );
+                debug!( "image type: {:?}", img.color() );
+                
+                let texture0 = texture::Texture::from( &img );
+                let texture_data = Vec::from( texture0 );
+                let ( w, h ) = img.dimensions();
+                let event_load_texture = renderer_gl::Event::LoadTexture( String::from("texture0"), texture_data, w as _, h as _ );
+                render_events.push( event_load_texture );
+
+                info!( "press q to quit." );
+
+                render_events
+            },
+            RenderObj::TestGeometry{ _time_game, _light, _camera } =>{
+                let mut render_events = vec![];
+                
+                //create some meshes for test:
+                //set triangle vert positions and normals
+                let mut mesh = mesh::Mesh::init( 0 );
+                mesh._pos.extend_from_slice( &[ math::mat::Mat3x1 { _val: [-1f32, -1f32, -1f32 ] },
+                                                math::mat::Mat3x1 { _val: [ 5f32, -1f32, -1f32 ] },
+                                                math::mat::Mat3x1 { _val: [-1f32,  1f32, -1f32 ] },
+                                                math::mat::Mat3x1 { _val: [ 4f32, -1f32, 15f32 ] },
+                                                math::mat::Mat3x1 { _val: [ 6f32, -1f32, 15f32 ] },
+                                                math::mat::Mat3x1 { _val: [ 4f32,  1f32, 15f32 ] }, ] );
+
+                mesh._normal.extend_from_slice( &[ math::mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
+                                                   math::mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
+                                                   math::mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
+                                                   math::mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
+                                                   math::mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
+                                                   math::mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] }, ] );
+                
+                mesh._tc.extend_from_slice( &[ math::mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
+                                               math::mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
+                                               math::mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
+                                               math::mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
+                                               math::mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
+                                               math::mat::Mat2x1 { _val: [ 0f32, 0f32 ] }, ] );
+
+                let mesh_copy = mesh.clone();
+
+                let mut mesh2 = mesh_copy.clone();
+                mesh2._pos.clear();
+                mesh2._pos.extend_from_slice( &[ math::mat::Mat3x1 { _val: [-1f32+ _time_game, -1f32, -1f32 ] },
+                                                 math::mat::Mat3x1 { _val: [ 5f32+_time_game, -1f32, -1f32 ] },
+                                                 math::mat::Mat3x1 { _val: [-1f32+_time_game,  1f32, -1f32 ] },
+                                                 math::mat::Mat3x1 { _val: [ 4f32+_time_game, -1f32, 15f32 ] },
+                                                 math::mat::Mat3x1 { _val: [ 6f32+_time_game, -1f32, 15f32 ] },
+                                                 math::mat::Mat3x1 { _val: [ 4f32+_time_game,  1f32, 15f32 ] }, ] );
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh2 ) ) );
+
+                let prim_box = primitive::Poly6 { _pos: math::mat::Mat3x1 { _val: [ -5f32, -10f32, 5f32 ] },
+                                                   _radius: 5f32 };
+
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_box ) ) );
+
+                let prim_sphere = primitive::SphereIcosahedron::init( math::mat::Mat3x1 { _val: [ -20f32, -10f32, 0f32 ] }, 5f32 );
+
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_sphere ) ) );
+                
+                let l = &_light;
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( l.clone() ) ) );
+
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( _camera.clone() ) ) );
+
+                // _r._state._time_game += -0.01;
+
+                render_events
+            },
+        }
     }
 }
 
@@ -203,20 +321,18 @@ impl IGameLogic for GameLogic {
     ///computes changed game state given user inputs and current game state
     fn transition_states( & mut self, inputs: & [ InputFiltered ] ) -> GameStateChangePending {
         //todo
-        
-        // let mut state_change = self._state;
 
         for i in inputs.iter() {
             match i {
                 &InputFiltered::Button { key: KeyCode::Q, .. } => {
-                    // state_change._exit = true;
+                    self._state._exit = true;
                 },
                 _ => {},
             }
         }
 
-        // state_change._continue_compute = true;
-        
+        self.set_continue_compute( true );
+
         // state_change
         Default::default()
     }
@@ -227,17 +343,19 @@ impl IGameLogic for GameLogic {
     fn get_states_mut( & mut self ) -> & mut Self::GameState {
         & mut self._state
     }
+    fn set_continue_compute( & mut self, b: bool ) {
+        self._state._continue_compute = b;
+    }
     fn continue_compute( & mut self ) -> bool {
-        // if changed_states._continue_compute && !changed_states._exit {
-        //     true
-        // } else {
-        //     false
-        // }
-        true
+        self._state._continue_compute
     }
     fn get_computations( & mut self, _changed_game_state: & GameStateChangePending ) -> Vec< ComputeUnit > {
-        //todo
+        //todo: transform changed game state to additional computations
+
         let mut _compute_units = vec![];
+
+        //append this to signal compute cycle is complete
+        _compute_units.push( ComputeUnit::SignalEndCompute );
 
         _compute_units
     }
@@ -249,23 +367,29 @@ impl IGameLogic for GameLogic {
     }
     fn get_renderable_components( & mut self ) -> Vec< RenderObj > {
         //todo
-        vec![]
+        let mut v = vec![];
+
+        if !self._state._is_init_run_first_time {
+            //does this once to setup some shaders
+            self._state._is_init_run_first_time = true;
+            let initial_render = RenderObj::InitialRender { _path_shader_fs: self._path_shader_fs.clone(),
+                                                            _path_shader_vs: self._path_shader_vs.clone() };
+            v.push( initial_render );
+        }
+
+        //dummy geometry to render
+        v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
+                                          _light: self._lights[0].clone(),
+                                          _camera: self._cameras[0].clone() } );
+        
+        self._state._time_game -= 0.01;
+
+        v
     }
     fn filter_renderables( & mut self, _r: Vec< RenderObj > ) -> Vec< RenderObj > {
-        //todo
-        vec![]
+        //todo: add spatial accelerator algo here
+        _r
     }
-    //todo: remove this method and move required logic into the game state
-    // fn get_render_events( & mut self, r: Vec< RenderObj > ) -> Vec< <Self as IGameLogic>::EventRender > {
-    //     let mut render_events = GameLogic::init_run_first_time( self );
-
-    //     //sample rendering object creation for now
-    //     let mut d = GameLogic::dummy_block( self );
-
-    //     render_events.append( & mut d );
-
-    //     render_events
-    // }
 
     fn should_exit( & mut self ) -> bool {
         self._state._exit

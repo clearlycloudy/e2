@@ -7,13 +7,14 @@ use interface::i_scheduler::IScheduler;
 pub trait IGameLogic
 {
     type EventInput : Debug;
-    type EventRender : From< Self::RenderObj >;
+    type EventRender;
     type GameState : Default + Clone + From< (Self::GameState, Self::GameStateChangeApply) >;
     type GameStateChangePending : Default + Clone;
     type GameStateChangeApply : Default + Clone + From< Self::ComputeUnit >;
     type ComputeUnit;
     type ComputeSchedule : IScheduler< Item = Self::ComputeUnit > + Iterator<Item = Vec<Self::ComputeUnit> >;
-    type RenderObj;
+    /// transform a high level renderobj representation into render commands / elements
+    type RenderObj : Into< Vec< Self::EventRender > >;
     
     fn new() -> Self;
     
@@ -28,6 +29,8 @@ pub trait IGameLogic
 
     ///compute constraints per cycle
     fn continue_compute( & mut self ) -> bool;
+
+    fn set_continue_compute( & mut self, bool );
 
     ///get what to compute based on changed game state
     fn get_computations( & mut self, changed_game_state: & Self::GameStateChangePending ) -> Vec< Self::ComputeUnit >;
@@ -53,10 +56,14 @@ pub trait IGameLogic
         
         //get changed states pending for computations
         let changed_states_pending = self.transition_states( e );
+
+        let mut count_compute_cycle = 0;
         
         //perform computations
-        while self.continue_compute() {
+        while self.continue_compute() { //compute flag accessed in game state by game logic
 
+            count_compute_cycle += 1;
+            
             //todo: transform changed game states to determine what to compute/update
             let computes = self.get_computations( & changed_states_pending );
 
@@ -77,6 +84,8 @@ pub trait IGameLogic
                         *self.get_states_mut() = game_state_new;
                     });
             }
+
+            trace!( "compute cycle(s): {}", count_compute_cycle );
         }
 
         //transform renderable objects to render events
@@ -88,7 +97,8 @@ pub trait IGameLogic
         //do further render commands packaging here
         let render_events = render_objects_filtered
             .into_iter()
-            .map( |x| Self::EventRender::from( x ) )
+            //transformation of high level game object into render elements / commands
+            .flat_map( |x| Self::RenderObj::into( x ) )
             .collect();
         
         let sig_exit = self.should_exit();

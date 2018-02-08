@@ -32,3 +32,7 @@ pretty_env_logger = "0.2.0"
 [[bin]]
 name = "e2r_example_kernel_impl001"
 path = "core/example/example_kernel_impl001.rs"
+
+# [[bin]]
+# name = "n_of_a_kind"
+# path = "games/n_of_a_kind.rs"

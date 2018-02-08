@@ -10,15 +10,15 @@ use implement::window::winglutin::WinGlutin;
 use implement::render::renderer_gl::Renderer;
 use implement::ui::input_default_glutin::XformInput;
 
-pub struct Kernel {
+pub struct Kernel < GameImpl > where GameImpl : Default {
     pub _windowing: WinGlutin,
     pub _input: XformInput,
-    pub _game_logic: GameLogic,
+    pub _game_logic: GameLogic< GameImpl >,
     pub _renderer: Renderer,
 }
 
 ///use default implementation for run method
-impl IKernel< WinGlutin, XformInput, GameLogic, Renderer > for Kernel {
+impl < GameImpl > IKernel< WinGlutin, XformInput, GameLogic< GameImpl >, Renderer > for Kernel< GameImpl > where GameImpl : Default {
     fn new() -> Result< Self, & 'static str > where Self: Sized {
 
         info!("kernel creation." );
@@ -52,26 +52,26 @@ impl IKernel< WinGlutin, XformInput, GameLogic, Renderer > for Kernel {
     }
 }
 
-impl AsMut< WinGlutin > for Kernel {
+impl < GameImpl > AsMut< WinGlutin > for Kernel< GameImpl > where GameImpl : Default {
     fn as_mut( & mut self ) -> & mut WinGlutin {
         & mut self._windowing
     }
 }
 
-impl AsMut< GameLogic > for Kernel {
-    fn as_mut( & mut self ) -> & mut GameLogic {
+impl < GameImpl > AsMut< GameLogic< GameImpl > > for Kernel < GameImpl > where GameImpl : Default {
+    fn as_mut( & mut self ) -> & mut GameLogic< GameImpl > {
         & mut self._game_logic
     }
 }
 
-impl AsMut< Renderer > for Kernel {
+impl < GameImpl > AsMut< Renderer > for Kernel < GameImpl > where GameImpl : Default {
    fn as_mut( & mut self ) -> & mut Renderer {
         & mut self._renderer
     }
 
 }
     
-impl AsMut< XformInput > for Kernel {
+impl < GameImpl > AsMut< XformInput > for Kernel < GameImpl > where GameImpl : Default {
    fn as_mut( & mut self ) -> & mut XformInput {
         & mut self._input
     }

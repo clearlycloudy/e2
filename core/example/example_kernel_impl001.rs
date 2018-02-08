@@ -9,6 +9,14 @@ use self::e2rcore::interface::i_kernel::IKernel;
 
 use self::e2rcore::implement::kernel::kernel_impl_001::Kernel;
 
+pub struct DummyGameImpl {}
+
+impl Default for DummyGameImpl {
+    fn default() -> DummyGameImpl {
+        DummyGameImpl {}
+    }
+}
+
 #[allow(unused)]
 fn main() {
 
@@ -16,7 +24,8 @@ fn main() {
     
     pretty_env_logger::init_custom_env( "LOG_SETTING" );
     
-    let mut k = Kernel::new().unwrap();
+    let mut k : Kernel<DummyGameImpl> = Kernel::new().unwrap();
+
     k.run();
 
 }

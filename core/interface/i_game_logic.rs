@@ -13,6 +13,8 @@ pub trait IGameLogic
     type GameStateChangeApply : Default + Clone + From< Self::ComputeUnit >;
     type ComputeUnit;
     type ComputeSchedule : IScheduler< Item = Self::ComputeUnit > + Iterator<Item = Vec<Self::ComputeUnit> >;
+    type GameImpl;
+
     /// transform a high level renderobj representation into render commands / elements
     type RenderObj : Into< Vec< Self::EventRender > >;
     

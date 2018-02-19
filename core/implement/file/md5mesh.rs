@@ -1,8 +1,10 @@
+extern crate mazth;
+
 use std::str;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use implement::math::quat::Quat;
+use self::mazth::quat::Quat;
 use implement::file::md5common;
 
 #[derive(Debug)]

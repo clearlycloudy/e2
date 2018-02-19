@@ -1,7 +1,8 @@
+extern crate mazth;
+
 use std::str;
 
-use implement::math::mat::Mat3x1;
-use implement::math::quat::Quat;
+use self::mazth::{ mat::Mat3x1, quat::Quat };
 use implement::file::md5rig;
 use implement::file::md5mesh;
 

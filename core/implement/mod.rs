@@ -1,8 +1,7 @@
 pub mod commonutil;
 pub mod ds;
 pub mod dsc;
-pub mod memory;
-pub mod math;
+// pub mod memory;
 pub mod file;
 pub mod window;
 pub mod render;
@@ -14,4 +13,5 @@ pub mod motion;
 pub mod util;
 pub mod logic;
 pub mod ui;
+pub mod math;
 

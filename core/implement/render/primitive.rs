@@ -1,4 +1,5 @@
 extern crate pretty_env_logger;
+extern crate mazth;
 
 use std::collections::HashMap;
 use std::any::Any;
@@ -7,7 +8,7 @@ use interface::i_ele;
 use interface::i_renderobj;
 use interface::i_component;
 
-use implement::math::mat;
+use self::mazth::mat;
 
 /// # 6 sided polyhedral / box
 #[derive(Clone)]
@@ -350,9 +351,9 @@ impl i_ele::IObjImpl for SphereIcosahedron {
             let r = self._radius;
             let offset = self._pos;
             for i in faces.iter() {
-                let x = self._positions[ i[0] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k as u32] ).collect::<Vec<f32> >();
-                let y = self._positions[ i[1] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k as u32] ).collect::<Vec<f32> >();
-                let z = self._positions[ i[2] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k as u32] ).collect::<Vec<f32> >();
+                let x = self._positions[ i[0] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k] ).collect::<Vec<f32> >();
+                let y = self._positions[ i[1] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k] ).collect::<Vec<f32> >();
+                let z = self._positions[ i[2] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k] ).collect::<Vec<f32> >();
 
                 let n = mat::Mat3x1 { _val: [ z[0]-y[0], z[1]-y[1], z[2]-y[2] ] }.cross( & mat::Mat3x1 { _val: [ x[0]-y[0], x[1]-y[1], x[2]-y[2] ] } ).unwrap().normalize().unwrap();
                 pos.extend_from_slice( &x[..] );

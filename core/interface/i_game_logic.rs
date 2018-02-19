@@ -13,7 +13,6 @@ pub trait IGameLogic
     type GameStateChangeApply : Default + Clone + From< Self::ComputeUnit >;
     type ComputeUnit;
     type ComputeSchedule : IScheduler< Item = Self::ComputeUnit > + Iterator<Item = Vec<Self::ComputeUnit> >;
-    type GameImpl;
 
     /// transform a high level renderobj representation into render commands / elements
     type RenderObj : Into< Vec< Self::EventRender > >;
@@ -47,7 +46,9 @@ pub trait IGameLogic
     fn filter_renderables( & mut self, r: Vec< Self::RenderObj > ) -> Vec< Self::RenderObj >;
 
     fn should_exit( & mut self ) -> bool;
-    
+
+    // fn get_game_impl( & mut self ) -> & mut Self::GameImpl;
+
     ///default implementation
     fn process_input_events( & mut self, e: & [ Self::EventInput ] ) -> ( Vec< Self::EventRender >, bool ) {
 
@@ -60,8 +61,11 @@ pub trait IGameLogic
         let changed_states_pending = self.transition_states( e );
 
         let mut count_compute_cycle = 0;
-        
-        //perform computations
+
+        //perform computations via:
+        //pending_changed_state -> computes -> compute schedule -> execute computes -> 
+        //finished_compute -> apply to new state
+
         while self.continue_compute() { //compute flag accessed in game state by game logic
 
             count_compute_cycle += 1;
@@ -73,11 +77,11 @@ pub trait IGameLogic
             //with no dependencies across different series of iterator in the vector
             let scheduler = Self::ComputeSchedule::new( computes.as_slice() );
 
-            for i in scheduler { //consume and fork work possible into parallel threads
+            for i in scheduler { //todo: offload work to parallel threads
                 i.into_iter()
                     //execute computation unit and map it back to a state change
                     .map( |compute_unit| Self::GameStateChangeApply::from(compute_unit) )
-                    //apply the change back to the game state
+                    //apply the change back to the game state, possibly use fold instead
                     .for_each( |changes| {
                         //apply result of compute unit changes back into game state
                         //todo: optimize this

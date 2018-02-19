@@ -1,12 +1,13 @@
 ///module for camera motion by wrapping a render camera
 ///and additional property interpolators to be used for motion stepping
 
+extern crate mazth;
+
 use std::collections::HashMap;
-// use interface::i_bound::{ IBound };
 use interface::i_interpolate::*;
 use interface::i_camera::ICamera;
 
-use implement::math::mat::*;
+use self::mazth::mat::*;
 // use implement::math::frustum::*;
 use implement::render::camera;
 

@@ -1,7 +1,7 @@
 extern crate pretty_env_logger;
+extern crate mazth;
 
-use implement::math::mat::Mat3x1;
-use implement::math::mat::Mat2x1;
+use self::mazth::mat::{ Mat3x1, Mat2x1 };
 use std::collections::HashMap;
 use std::vec::Vec;
 use std::any::Any;

@@ -4,21 +4,29 @@ use interface::i_window::IWindow;
 use interface::i_game_logic::IGameLogic;
 use interface::i_kernel::IKernel;
 use interface::i_ui::IUi;
+use interface::i_renderer::IRenderer;
 
-use implement::logic::game0::GameLogic; //example game logic to test
+// use implement::logic::game0::GameLogic; //example game logic to test
 use implement::window::winglutin::WinGlutin;
 use implement::render::renderer_gl::Renderer;
 use implement::ui::input_default_glutin::XformInput;
 
-pub struct Kernel < GameImpl > where GameImpl : Default {
+pub struct Kernel < GameLogic > where GameLogic : IGameLogic< EventInput = <XformInput as IUi>::EventInputFiltered,
+                                                              EventRender = <Renderer as IRenderer>::EventRender >,
+<GameLogic as IGameLogic>::RenderObj : Into< Vec< <GameLogic as IGameLogic>::EventRender > >
+{
     pub _windowing: WinGlutin,
     pub _input: XformInput,
-    pub _game_logic: GameLogic< GameImpl >,
+    pub _game_logic: GameLogic,
     pub _renderer: Renderer,
 }
 
 ///use default implementation for run method
-impl < GameImpl > IKernel< WinGlutin, XformInput, GameLogic< GameImpl >, Renderer > for Kernel< GameImpl > where GameImpl : Default {
+impl < GameLogic > IKernel< WinGlutin, XformInput, GameLogic, Renderer > for Kernel< GameLogic > where GameLogic : IGameLogic< EventInput = <XformInput as IUi>::EventInputFiltered,
+                                                                                                                               EventRender = <Renderer as IRenderer>::EventRender >,
+<GameLogic as IGameLogic>::RenderObj : Into< Vec< <GameLogic as IGameLogic>::EventRender > >
+{
+        
     fn new() -> Result< Self, & 'static str > where Self: Sized {
 
         info!("kernel creation." );
@@ -52,26 +60,38 @@ impl < GameImpl > IKernel< WinGlutin, XformInput, GameLogic< GameImpl >, Rendere
     }
 }
 
-impl < GameImpl > AsMut< WinGlutin > for Kernel< GameImpl > where GameImpl : Default {
+impl < GameLogic > AsMut< WinGlutin > for Kernel< GameLogic > where GameLogic : IGameLogic< EventInput = <XformInput as IUi>::EventInputFiltered,
+                                                                                            EventRender = <Renderer as IRenderer>::EventRender >,
+<GameLogic as IGameLogic>::RenderObj : Into< Vec< <GameLogic as IGameLogic>::EventRender > >
+{
     fn as_mut( & mut self ) -> & mut WinGlutin {
         & mut self._windowing
     }
 }
 
-impl < GameImpl > AsMut< GameLogic< GameImpl > > for Kernel < GameImpl > where GameImpl : Default {
-    fn as_mut( & mut self ) -> & mut GameLogic< GameImpl > {
+impl < GameLogic > AsMut< GameLogic > for Kernel < GameLogic > where GameLogic : IGameLogic< EventInput = <XformInput as IUi>::EventInputFiltered,
+                                                                                             EventRender = <Renderer as IRenderer>::EventRender >,
+<GameLogic as IGameLogic>::RenderObj : Into< Vec< <GameLogic as IGameLogic>::EventRender > >
+{
+    fn as_mut( & mut self ) -> & mut GameLogic {
         & mut self._game_logic
     }
 }
 
-impl < GameImpl > AsMut< Renderer > for Kernel < GameImpl > where GameImpl : Default {
+impl < GameLogic > AsMut< Renderer > for Kernel < GameLogic > where GameLogic : IGameLogic< EventInput = <XformInput as IUi>::EventInputFiltered,
+                                                                                            EventRender = <Renderer as IRenderer>::EventRender >,
+<GameLogic as IGameLogic>::RenderObj : Into< Vec< <GameLogic as IGameLogic>::EventRender > >
+{
    fn as_mut( & mut self ) -> & mut Renderer {
         & mut self._renderer
     }
 
 }
     
-impl < GameImpl > AsMut< XformInput > for Kernel < GameImpl > where GameImpl : Default {
+impl < GameLogic > AsMut< XformInput > for Kernel < GameLogic > where GameLogic : IGameLogic< EventInput = <XformInput as IUi>::EventInputFiltered,
+                                                                                              EventRender = <Renderer as IRenderer>::EventRender >,
+<GameLogic as IGameLogic>::RenderObj : Into< Vec< <GameLogic as IGameLogic>::EventRender > >
+{
    fn as_mut( & mut self ) -> & mut XformInput {
         & mut self._input
     }

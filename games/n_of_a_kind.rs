@@ -1,32 +1,44 @@
-///sample implementation of game logic, also extends the game logic to _game_impl
+///sample implementation of game logic
 
 extern crate image;
 extern crate rand;
 extern crate mazth;
+extern crate e2rcore;
+extern crate pretty_env_logger;
 
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 
-use interface::i_ele;
-use interface::i_game_logic::IGameLogic;
-use interface::i_ui::{ InputFiltered, KeyCode };
+use self::e2rcore::interface::i_ele;
+use self::e2rcore::interface::i_game_logic::IGameLogic;
+use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode };
 // use interface::i_camera::ICamera;
-use interface::i_scheduler::IScheduler;
+use self::e2rcore::interface::i_scheduler::IScheduler;
 
-use implement::render::renderer_gl;
-use implement::render::util_gl;
-use implement::render::texture;
-use implement::render::camera;
-use implement::render::light;
-use implement::render::mesh;
-use implement::render::primitive;
+use self::e2rcore::implement::render::renderer_gl;
+use self::e2rcore::implement::render::util_gl;
+use self::e2rcore::implement::render::texture;
+use self::e2rcore::implement::render::camera;
+use self::e2rcore::implement::render::light;
+use self::e2rcore::implement::render::mesh;
+use self::e2rcore::implement::render::primitive;
 
 use self::mazth::mat;
 
 use self::rand::Rng;
 use self::image::GenericImage;
+
+use self::rand::distributions::{IndependentSample, Range};
+
+use std::env;
+
+use std::collections::{ HashSet, HashMap };
+
+use self::e2rcore::interface::i_kernel::IKernel;
+
+use self::e2rcore::implement::kernel::kernel_impl_001::Kernel;
 
 //todo: put this somewhere else
 pub fn file_open( file_path: & str ) -> Option<String> {
@@ -40,21 +52,58 @@ pub fn file_open( file_path: & str ) -> Option<String> {
     Some(contents)
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct GameState {
     _exit: bool,
     _continue_compute: bool,
     _time_game: f32,
-    _is_init_run_first_time: bool
+    _is_init_run_first_time: bool,
+
+    pub _row: isize,
+    pub _col: isize,
+    pub _total: isize,
+    pub _board: Vec< Vec< Option< GamePiece > > >,
+    pub _n: isize,
+    pub _piece_count: isize,
+    pub _piece_gen_distr: HashMap< GamePiece, f32 >,
 }
 
 impl Default for GameState {
     fn default() -> GameState {
+        let row = 10;
+        let col = 10;
+        let num_cells = row * col;
+        let n = 3;
+        assert!( n <= num_cells );
+        let piece_weight = [ ( GamePiece::Grass, 0.5 ),
+                               ( GamePiece::Bush, 0.25 ),
+                               ( GamePiece::Tree, 0.125 ),
+                               ( GamePiece::House, 0.0625 ),
+                               ( GamePiece::Bear, 0.03 ),
+                               ( GamePiece::Cemetery, 0.015 ),
+                               ( GamePiece::Church, 0.01 ),
+        ].to_vec();
+
+        let partition = piece_weight.iter().fold( 0., |accum, x| accum + x.1 );
+        let mut accum = 0.0;
+        let piece_distr = piece_weight.iter().map( |x| {
+            accum += x.1;
+            ( x.0, accum / partition ) 
+        }).collect();
+
         GameState {
             _exit: false,
             _continue_compute: false,
             _time_game: 0.0,
             _is_init_run_first_time: false,
+
+            _row: row,
+            _col: col,
+            _total: row * col,
+            _board: vec![ vec![ None; col as usize ]; row as usize ],
+            _n: n,
+            _piece_count: 0,
+            _piece_gen_distr: piece_distr,
         }
     }
 }
@@ -379,14 +428,14 @@ impl IGameLogic for GameLogic {
             //does this once to setup some shaders
             self._state._is_init_run_first_time = true;
             let initial_render = RenderObj::InitialRender { _path_shader_fs: self._path_shader_fs.clone(),
-                                                            _path_shader_vs: self._path_shader_vs.clone() };
+                                                             _path_shader_vs: self._path_shader_vs.clone() };
             v.push( initial_render );
         }
 
         //dummy geometry to render
         v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
-                                          _light: self._lights[0].clone(),
-                                          _camera: self._cameras[0].clone() } );
+                                           _light: self._lights[0].clone(),
+                                           _camera: self._cameras[0].clone() } );
         
         self._state._time_game -= 0.01;
 
@@ -404,4 +453,213 @@ impl IGameLogic for GameLogic {
     // fn get_game_impl( & mut self ) -> & mut GameImpl {
     //     & mut self._game_impl
     // }
+}
+
+#[derive(Clone, PartialEq, Eq, Copy, Hash, Debug)]
+pub enum GamePiece {
+    Grass,
+    Bush,
+    Tree,
+    House,
+    Bear,
+    Cemetery,
+    Church,
+}
+
+impl GameLogic {
+    pub fn place_piece( & mut self, piece: GamePiece, to: (isize,isize) ) -> bool {
+        if to.0 as usize >= self._state._board[0].len() ||
+            to.1 as usize >= self._state._board[0].len() {
+                false
+            } else {
+                let is_empty = match &self._state._board[ to.0 as usize ][ to.1 as usize ] {
+                    &None => {
+                        true
+                    },
+                    &Some(ref _x) => {
+                        false
+                    },
+                };
+                if is_empty {
+                    self._state._board[ to.0 as usize ][ to.1 as usize ] = Some( piece );
+                    self.update_placement( to );
+                    true
+                } else {
+                    false
+                }
+            }
+    }
+    pub fn piece_replacement( & self, _piece: GamePiece ) -> GamePiece {
+        match _piece {
+            GamePiece::Grass => { GamePiece::Bush },
+            GamePiece::Bush => { GamePiece::Tree },
+            GamePiece::Tree => { GamePiece::House },
+            GamePiece::House => { GamePiece::House }, //todo further progress instead of capping
+            GamePiece::Bear => { GamePiece::Cemetery },
+            GamePiece::Cemetery => { GamePiece::Church },
+            GamePiece::Church => { GamePiece::Church }, //todo further progress instead of capping
+        }
+    }
+    pub fn update_placement( & mut self, loc: (isize,isize) ) {
+        let mut hs = HashSet::new();
+        let mut q = vec![];
+        
+        let piece =
+            match &self._state._board[ loc.0 as usize ][ loc.1 as usize ] {
+                &None => { panic!("cannot update empty placement"); },
+                &Some(ref x) => { x.clone() },
+            };
+        
+        q.push(loc);
+        while !q.is_empty() {
+            let a = q.pop().unwrap();
+            let a_neighbour = [   ( a.0 - 1, a.1 ),
+                                    ( a.0 + 1, a.1 ),
+                                    ( a.0, a.1 - 1 ),
+                                    ( a.0, a.1 + 1 )
+            ].to_vec().into_iter()
+                .filter( |x| {
+                    x.0 >= 0 &&
+                        x.0 < self._state._row &&
+                        x.1 >= 0 &&
+                        x.1 < self._state._col &&
+                        &self._state._board[x.0 as usize][x.1 as usize] == &Some(piece) } );
+
+            hs.insert( a );
+            q.extend( a_neighbour );
+        }
+
+        if q.len() >= self._state._n as usize {
+            let replacement = self.piece_replacement( piece );        
+            
+            for i in hs.iter() {
+                self._state._board[i.0 as usize][i.1 as usize] = None;
+            }
+            
+            self._state._board[loc.0 as usize][loc.1 as usize] = Some( replacement );
+        }
+
+    }
+    fn is_game_over( & self ) -> bool {
+        self._state._piece_count >= self._state._total
+    }
+    fn get_available_moves( & self ) -> Vec< (isize,isize) > {
+        let mut moves = vec![];
+        for i in 0..self._state._row {
+            for j in 0..self._state._col {
+                match self._state._board[i as usize][j as usize] {
+                    None => {
+                        moves.push( ( i, j ) );
+                    },
+                    _ => {},
+                }
+            }
+        }
+        moves
+    }
+    fn get_available_pieces( & self ) -> Vec< GamePiece > {
+        [   GamePiece::Grass,
+            GamePiece::Bush,
+            GamePiece::Tree,
+            GamePiece::House,
+            GamePiece::Bear,
+            GamePiece::Cemetery,
+            GamePiece::Church,
+        ].to_vec()
+    }
+    fn generate_random_location( & self ) -> Option< (isize,isize) > {
+        
+        let moves = self.get_available_moves();
+
+        if moves.is_empty() {
+            return None
+        }
+        
+        let between = Range::new( 0, moves.len() );
+        let mut rng = rand::thread_rng();
+        
+        let idx = between.ind_sample(&mut rng);
+
+        assert!(idx < moves.len() );
+
+        Some( moves[idx] )
+    }
+    fn generate_random_piece( & self ) -> Option< GamePiece > {
+
+        let pieces = self.get_available_pieces();
+
+        let mut piece_weight = vec![];
+        
+        for i in pieces.iter() {
+            let is_present = self._state._piece_gen_distr.contains_key(i);
+            if is_present {
+                let w = self._state._piece_gen_distr.get( i ).unwrap();
+                piece_weight.push( ( *i, *w ) );
+            }
+        }
+        
+        let partition = piece_weight.iter().fold( 0., |accum, x| accum + x.1 );
+        let mut accum = 0.0;
+        let piece_distr = piece_weight.iter().map( |x| {
+            accum += x.1;
+            ( x.0, accum / partition ) 
+        }).collect::<Vec<_>>();
+        
+        let between = Range::new( 0.0, 1.0 );
+        let mut rng = rand::thread_rng();
+        
+        let rand_fraction = between.ind_sample(&mut rng);
+
+        let mut choosen_piece = None;
+        for i in piece_distr.iter() {
+            if rand_fraction <= i.1 {
+                choosen_piece = Some(i.0);
+                break;
+            }
+        }
+
+        choosen_piece
+    }
+    fn get_player_move( & mut self ) -> ( GamePiece, (isize,isize) ){
+        unimplemented!();
+    }
+    fn send_player_piece( & mut self, _piece: GamePiece ) {
+        unimplemented!();
+    }
+    fn quit_game( & mut self ) {
+        unimplemented!();
+    }
+    fn main_state_change( & mut self ) {
+        //todo
+        if self.is_game_over() {
+            self.quit_game();
+        } else {
+            let ( piece, loc ) = self.get_player_move();
+            self.place_piece( piece, loc );
+            self.update_placement( loc );
+
+            let rand_piece = self.generate_random_piece();
+            match rand_piece {
+                None => {
+                    self.quit_game();
+                },
+                Some(piece)  => {
+                    self.send_player_piece( piece );
+                },
+            }
+        }
+    }
+}
+
+#[main]
+fn main() {
+
+    env::set_var("LOG_SETTING", "info" );
+    
+    pretty_env_logger::init_custom_env( "LOG_SETTING" );
+    
+    let mut k : Kernel<GameLogic> = Kernel::new().unwrap();
+    
+    k.run();
+    
 }

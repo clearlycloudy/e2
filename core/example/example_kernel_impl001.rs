@@ -8,6 +8,7 @@ use std::env;
 use self::e2rcore::interface::i_kernel::IKernel;
 
 use self::e2rcore::implement::kernel::kernel_impl_001::Kernel;
+use self::e2rcore::implement::logic::game0;
 
 pub struct DummyGameImpl {}
 
@@ -24,7 +25,7 @@ fn main() {
     
     pretty_env_logger::init_custom_env( "LOG_SETTING" );
     
-    let mut k : Kernel<DummyGameImpl> = Kernel::new().unwrap();
+    let mut k : Kernel<game0::GameLogic> = Kernel::new().unwrap();
 
     k.run();
 

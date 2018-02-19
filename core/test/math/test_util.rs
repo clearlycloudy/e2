@@ -1,15 +1,16 @@
+extern crate mazth;
+
 #[allow(unused_imports)]
 use std::ops::Div;
 #[allow(unused_imports)]
 use std::cmp::Ordering;
 
-use interface::i_comparable::IComparableError;
+use self::mazth::i_comparable::IComparableError;
+use self::mazth::mat::{Mat3x1, Mat4};
+use implement::math::util;
 
 #[test]
 fn test_math_util(){
-    use implement::math::util;
-    use implement::math::mat::Mat4;
-    use implement::math::mat::Mat3x1;
 
     //look_at
     {

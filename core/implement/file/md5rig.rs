@@ -1,7 +1,9 @@
+extern crate mazth;
+
 use std::str;
 use std::clone::Clone;
 
-use implement::math::quat::Quat;
+use self::mazth::quat::Quat;
 use implement::file::md5anim;
 
 #[derive(Debug)]

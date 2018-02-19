@@ -28,11 +28,13 @@ image = "0.17.0"
 num = "0.1.40"
 log = "0.4.1"
 pretty_env_logger = "0.2.0"
+zpatial = "0.0.0"
+mazth = "0.1.0"
 
 [[bin]]
 name = "e2r_example_kernel_impl001"
 path = "core/example/example_kernel_impl001.rs"
 
-# [[bin]]
-# name = "n_of_a_kind"
-# path = "games/n_of_a_kind.rs"
+[[bin]]
+name = "n_of_a_kind"
+path = "games/mod.rs"

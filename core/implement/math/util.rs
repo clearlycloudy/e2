@@ -1,6 +1,8 @@
+extern crate mazth;
+
 use ::std::f32;
 
-use implement::math::mat;
+use self::mazth::mat;
 
 pub fn perspective( fov: f32, aspect: f32, near: f32, far: f32 ) -> mat::Mat4< f32 > {
     //fov is the full field of view in y-plane, eg: fovy = fov/2

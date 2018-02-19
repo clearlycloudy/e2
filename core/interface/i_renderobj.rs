@@ -1,6 +1,8 @@
+extern crate mazth;
+
 use std::collections::HashMap;
 
-use implement::math::mat;
+use self::mazth::mat;
 use implement::render::renderdevice_gl::RenderUniformCollection;
 
 pub trait Xform {

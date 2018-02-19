@@ -1,4 +1,6 @@
-use implement::math::mat;
+extern crate mazth;
+
+use self::mazth::mat;
 
 pub trait AdsCoeff {
     fn get_ads_coeff_spec( & self ) -> mat::Mat3x1< f32 >;

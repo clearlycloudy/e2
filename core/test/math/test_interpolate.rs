@@ -1,3 +1,5 @@
+extern crate mazth;
+
 #[allow(unused_imports)]
 use std::ops::Div;
 #[allow(unused_imports)]
@@ -5,10 +7,11 @@ use std::cmp::Ordering;
 
 use std::fmt::Debug;
 #[allow(unused_imports)]
-use implement::math::mat::Mat4x1;
+use self::mazth::mat::Mat4x1;
+use self::mazth::i_comparable::IComparableError;
+
 #[allow(unused_imports)]
 use interface::i_interpolate::IInterpolate;
-use interface::i_comparable::IComparableError;
 
 use implement::math::piecewise::Piecewise;
 

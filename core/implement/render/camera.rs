@@ -49,6 +49,7 @@ pub struct Cam {
     pub _view_xform: Mat4< f32 >,
     /// # The following generates the view matrix
     pub _pos: Mat3x1< f32 >,
+    pub _pos_orig: Mat3x1< f32 >,
     pub _up: Mat3x1< f32 >,
     pub _focus: Mat3x1< f32 >,
 }
@@ -62,6 +63,7 @@ impl Cam {
             _near: near,
             _far: far,
             _pos: pos,
+            _pos_orig: pos,
             _up: up,
             _focus: focus,
             _proj_xform: math::util::perspective( fov, aspect, near, far ),

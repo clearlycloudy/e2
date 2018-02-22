@@ -38,11 +38,13 @@ impl TrackBall {
         self._w = w;
         self._h = h;
     }
-    pub fn start_motion( & mut self, pos: & Mat2x1<f32> ){
-        self._pos_last = self.project_cursor_to_hemisphere( pos );
-    }
-    pub fn move_motion( & mut self, pos: & Mat2x1<f32> ){
+    // pub fn start_motion( & mut self, pos: & Mat2x1<f32> ){
+    //     self._pos_last = self.project_cursor_to_hemisphere( pos );
+    // }
+    pub fn move_motion( & mut self, pos_start: & Mat2x1<f32>, pos: & Mat2x1<f32> ){
 
+        self._pos_last = self.project_cursor_to_hemisphere( pos_start );
+        
         let pos_current = self.project_cursor_to_hemisphere( pos );
         
         let delta = pos_current.minus( &self._pos_last ).unwrap();
@@ -50,13 +52,11 @@ impl TrackBall {
         if delta[0].abs() > 0.001 || delta[1].abs() > 0.001 || delta[2].abs() > 0.001 {
             let angle = ( self._pos_last.dot( & pos_current ).unwrap()
                           / ( self._pos_last.magnitude().unwrap() * pos_current.magnitude().unwrap() ) )
-                .acos() * 180. / PI;
+                .acos();
 
             let axis = self._pos_last.cross( & pos_current ).unwrap().normalize().unwrap();
-            
-            self._pos_last = pos_current;
 
-            let q = Quat::<f32>::init_from_axis_angle_degree( ( axis, angle ) );
+            let q = Quat::<f32>::init_from_axis_angle_radian( ( axis, 3. * angle ) ).normalize();
 
             // println!( "axis: {:?}", axis );
             // println!( "angle: {}", angle );
@@ -65,16 +65,20 @@ impl TrackBall {
         }
     }
     fn project_cursor_to_hemisphere( & self, pos: & Mat2x1<f32> ) -> Mat3x1<f32> {
+
         let mut p : Mat3x1<f32> = Default::default();
-        
-        p[0] = ( 2. * pos[0] - self._w )/ self._w;
-        p[1] = ( self._h - 2. * pos[1] )/ self._h;
-
-        let d = p.magnitude().unwrap();
-
-        p[2] = ( PI / 2. * (if d < 1. { d } else { 1. }) ).cos();
-        
-        p.normalize().unwrap()
+        let r = self._w.min( self._h ) * 1.5; //radius of the trackball
+        p[0] = ( pos[0] - self._w / 2. ) / r; //normalize
+        p[1] = ( pos[1] - self._h / 2. ) / r; //normalize
+        let mut d = p.magnitude().unwrap();
+        if d > 1. {
+            p[0] = p[0] / (d * d);
+            p[1] = p[1] / (d * d);
+            d = 1.;
+        }
+        let elevation = ( 1. - d * d ).sqrt();
+        p[2] = elevation;
+        p
     }
     pub fn get_rot( & self ) -> & Quat<f32> {
         & self._rot

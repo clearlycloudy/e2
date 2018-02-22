@@ -399,9 +399,6 @@ impl IGameLogic for GameLogic {
                     self._mouse_r_down = true;
                     self._mouse_pos_down = self._mouse_pos;
                     info!( "mouse r down" );
-                    self._trackball.start_motion( & mat::Mat2x1 { _val: [ self._mouse_pos_down.0,
-                                                                          self._mouse_pos_down.1
-                    ] } );
                 },
                 &InputFiltered::Button { key: KeyCode::MouseR, state: State::Release } => {
                     self._mouse_r_down = false;
@@ -411,31 +408,37 @@ impl IGameLogic for GameLogic {
                 &InputFiltered::MouseCoord( c, v) => {
                     match c {
                         Coord::X => {
-                            self._mouse_pos.0 = v;
-                            if self._mouse_r_down {
-                                let delta = (self._mouse_pos.0 - self._mouse_pos_down.0,
-                                             self._mouse_pos.1 - self._mouse_pos_down.1);
-                                info!( "mouse r delta: {:?}", delta );
 
-                                self._trackball.move_motion( & mat::Mat2x1 { _val: [ self._mouse_pos.0,
-                                                                                     self._mouse_pos.1
-                                ] } );
-                                let rot = self._trackball.get_rot();
-                                info!( "rot: {:?}", rot._z );
+                            let old_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
+                                                                      self._mouse_pos.1
+                            ] };
+
+                            self._mouse_pos.0 = v;
+                        
+                            if self._mouse_r_down {
+
+                                let new_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
+                                                                          self._mouse_pos.1
+                                ] };
+                                
+                                self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos );
                             }
                         },
                         Coord::Y => {
-                            self._mouse_pos.1 = v;
-                            if self._mouse_r_down {
-                                let delta = (self._mouse_pos.0 - self._mouse_pos_down.0,
-                                             self._mouse_pos.1 - self._mouse_pos_down.1);
-                                info!( "mouse r delta: {:?}", delta );
 
-                                self._trackball.move_motion( & mat::Mat2x1 { _val: [ self._mouse_pos.0,
-                                                                                     self._mouse_pos.1
-                                ] } );
-                                let rot = self._trackball.get_rot();
-                                info!( "rot: {:?}", rot._z );
+                            let old_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
+                                                                      self._mouse_pos.1
+                            ] };
+
+                            self._mouse_pos.1 = v;
+
+                            if self._mouse_r_down {
+
+                                let new_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
+                                                                          self._mouse_pos.1
+                                ] };
+                                
+                                self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos );
                             }
                         },
                         _ => {}
@@ -502,24 +505,17 @@ impl IGameLogic for GameLogic {
         //update camera
         if self._mouse_r_down {
             let rot_matrix = self._trackball.get_rot().to_rotation_matrix( true );
-            self._trackball.reset_rot();
 
-            // info!( "rot mat: {:?}", rot_matrix );
-
-            let offset = mat::Mat4x1 { _val: [ self._cameras[0]._pos[0] - self._cameras[0]._focus[0],
-                                            self._cameras[0]._pos[1] - self._cameras[0]._focus[1],
-                                            self._cameras[0]._pos[2] - self._cameras[0]._focus[2],
-                                            1. ] };
+            let offset = mat::Mat4x1 { _val: [ self._cameras[0]._pos_orig[0] - self._cameras[0]._focus[0],
+                                            self._cameras[0]._pos_orig[1] - self._cameras[0]._focus[1],
+                                            self._cameras[0]._pos_orig[2] - self._cameras[0]._focus[2],
+                                            0. ] };
             
             let pos_update = rot_matrix.mul_mat4x1( & offset ).unwrap();
 
             let pos_new = self._cameras[0]._focus.plus( & mat::Mat3x1 { _val: [ pos_update[0], pos_update[1], pos_update[2] ] } ).unwrap();
             self._cameras[0].update_pos( pos_new );
-
-            info!( "pos: {:?}", self._cameras[0]._pos );
         }
-        
-        // self._cameras[0]._pos = self._cameras[0]._pos.plus( & mat::Mat3x1 { _val: [ self._state._time_game, self._state._time_game, self._state._time_game ] } ).unwrap();
         
         //dummy geometry to render
         v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,

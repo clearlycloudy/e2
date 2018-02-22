@@ -25,6 +25,8 @@ use self::e2rcore::implement::render::light;
 use self::e2rcore::implement::render::mesh;
 use self::e2rcore::implement::render::primitive;
 
+use self::e2rcore::implement::ui::ui_cam::UiCam;
+
 use self::e2rcore::implement::cam::trackball::TrackBall;
 
 use self::mazth::mat;
@@ -307,11 +309,7 @@ pub struct GameLogic {
     _path_shader_vs: String,
     _path_shader_fs: String,
     _state: GameState,
-
-    _mouse_r_down: bool,
-    _mouse_pos_down: (f32,f32),
-    _mouse_pos: (f32,f32),
-    _trackball: TrackBall,
+    _uicam: UiCam,
 }
 
 impl IGameLogic for GameLogic {
@@ -335,12 +333,10 @@ impl IGameLogic for GameLogic {
             _path_shader_vs: String::new(),
             _path_shader_fs: String::new(),
             _state: Default::default(),
-
-            _mouse_r_down: false,
-            _mouse_pos_down: (0.,0.),
-            _mouse_pos: (0.,0.),
-
-            _trackball: TrackBall::new(500.,500.),
+            _uicam: UiCam {
+                _trackball: TrackBall::new(500.,500.),
+                .. Default::default()
+            },
         };
         
         //lights
@@ -388,66 +384,14 @@ impl IGameLogic for GameLogic {
     fn transition_states( & mut self, inputs: & [ InputFiltered ] ) -> GameStateChangePending {
         //todo
 
-        //add trackball control
-
         for i in inputs.iter() {
             match i {
                 &InputFiltered::Button { key: KeyCode::Q, .. } => {
                     self._state._exit = true;
                 },
-                &InputFiltered::Button { key: KeyCode::MouseR, state: State::Press } => {
-                    self._mouse_r_down = true;
-                    self._mouse_pos_down = self._mouse_pos;
-                    info!( "mouse r down" );
-                },
-                &InputFiltered::Button { key: KeyCode::MouseR, state: State::Release } => {
-                    self._mouse_r_down = false;
-                    self._mouse_pos_down = self._mouse_pos;
-                    info!( "mouse r up" );
-                },
-                &InputFiltered::MouseCoord( c, v) => {
-                    match c {
-                        Coord::X => {
-
-                            let old_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
-                                                                      self._mouse_pos.1
-                            ] };
-
-                            self._mouse_pos.0 = v;
-                        
-                            if self._mouse_r_down {
-
-                                let new_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
-                                                                          self._mouse_pos.1
-                                ] };
-                                
-                                self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos );
-                            }
-                        },
-                        Coord::Y => {
-
-                            let old_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
-                                                                      self._mouse_pos.1
-                            ] };
-
-                            self._mouse_pos.1 = v;
-
-                            if self._mouse_r_down {
-
-                                let new_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
-                                                                          self._mouse_pos.1
-                                ] };
-                                
-                                self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos );
-                            }
-                        },
-                        _ => {}
-                    }
-                },
-                _ => {
-                    info!( "other: {:?}", i );
-                },
-            }
+                _ => {},
+            };
+            self._uicam.process( i );
         }        
 
         self.set_continue_compute( true );
@@ -503,13 +447,13 @@ impl IGameLogic for GameLogic {
         }
 
         //update camera
-        if self._mouse_r_down {
-            let rot_matrix = self._trackball.get_rot().to_rotation_matrix( true );
+        if self._uicam._mouse_r_down {
+            let rot_matrix = self._uicam._trackball.get_rot().to_rotation_matrix( true );
 
             let offset = mat::Mat4x1 { _val: [ self._cameras[0]._pos_orig[0] - self._cameras[0]._focus[0],
-                                            self._cameras[0]._pos_orig[1] - self._cameras[0]._focus[1],
-                                            self._cameras[0]._pos_orig[2] - self._cameras[0]._focus[2],
-                                            0. ] };
+                                               self._cameras[0]._pos_orig[1] - self._cameras[0]._focus[1],
+                                               self._cameras[0]._pos_orig[2] - self._cameras[0]._focus[2],
+                                               0. ] };
             
             let pos_update = rot_matrix.mul_mat4x1( & offset ).unwrap();
 

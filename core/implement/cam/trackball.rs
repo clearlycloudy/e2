@@ -3,7 +3,7 @@ extern crate mazth;
 use self::mazth::mat::{ Mat2x1, Mat3x1 };
 use self::mazth::quat::Quat;
 
-use std::f32::consts::PI;
+// use std::f32::consts::PI;
 
 pub struct TrackBall {
     _rot: Quat<f32>,

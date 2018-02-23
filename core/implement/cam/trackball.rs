@@ -68,16 +68,16 @@ impl TrackBall {
 
         let mut p : Mat3x1<f32> = Default::default();
         let r = self._w.min( self._h ) * 1.5; //radius of the trackball
-        p[0] = ( pos[0] - self._w / 2. ) / r; //normalize
-        p[1] = ( pos[1] - self._h / 2. ) / r; //normalize
+        p[0] = ( pos[0] - self._w / 2. ) / r; //normalize, x-direction
+        p[2] = ( pos[1] - self._h / 2. ) / r; //normalize, z-direction, assumed same as camera up-vector
         let mut d = p.magnitude().unwrap();
         if d > 1. {
             p[0] = p[0] / (d * d);
-            p[1] = p[1] / (d * d);
+            p[2] = p[2] / (d * d);
             d = 1.;
         }
         let elevation = ( 1. - d * d ).sqrt();
-        p[2] = elevation;
+        p[1] = elevation; //y-direction
         p
     }
     pub fn get_rot( & self ) -> & Quat<f32> {

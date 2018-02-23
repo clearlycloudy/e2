@@ -37,4 +37,8 @@ path = "core/example/example_kernel_impl001.rs"
 
 [[bin]]
 name = "n_of_a_kind"
-path = "games/mod.rs"
+path = "games/n_of_a_kind/mod.rs"
+
+[[bin]]
+name = "model_viewer"
+path = "games/model_viewer/mod.rs"

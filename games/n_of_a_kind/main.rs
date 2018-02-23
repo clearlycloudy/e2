@@ -205,7 +205,7 @@ impl From< (GameState, GameStateChangeApply) > for GameState {
 
 pub enum RenderObj {
     InitialRender { _path_shader_vs: String, _path_shader_fs: String },
-    TestGeometry { _time_game: f32, _light: light::LightAdsPoint, _camera: camera::Cam },
+    BoardGeometry { _time_game: f32, _light: light::LightAdsPoint, _camera: camera::Cam, _gamestate: GameState },
 }
 
 
@@ -240,53 +240,22 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
 
                 render_events
             },
-            RenderObj::TestGeometry{ _time_game, _light, _camera } =>{
+            RenderObj::BoardGeometry{ _time_game, _light, _camera, _gamestate } =>{
                 let mut render_events = vec![];
-                
-                //create some meshes for test:
-                //set triangle vert positions and normals
-                let mut mesh = mesh::Mesh::init( 0 );
-                mesh._pos.extend_from_slice( &[ mat::Mat3x1 { _val: [-1f32, -1f32, -1f32 ] },
-                                                mat::Mat3x1 { _val: [ 5f32, -1f32, -1f32 ] },
-                                                mat::Mat3x1 { _val: [-1f32,  1f32, -1f32 ] },
-                                                mat::Mat3x1 { _val: [ 4f32, -1f32, 15f32 ] },
-                                                mat::Mat3x1 { _val: [ 6f32, -1f32, 15f32 ] },
-                                                mat::Mat3x1 { _val: [ 4f32,  1f32, 15f32 ] }, ] );
 
-                mesh._normal.extend_from_slice( &[ mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] }, ] );
-                
-                mesh._tc.extend_from_slice( &[ mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] }, ] );
+                for i in 0.._gamestate._row {
+                    for j in 0.._gamestate._col {
+                        let prim_box = primitive::Poly6 {
+                            _pos: mat::Mat3x1 { _val: [ 5. * i as f32, 5. * j as f32, 0. ] },
+                            _scale: mat::Mat3x1 { _val: [ 1., 1., 0.05 ] },
+                            _radius: 5f32 };
+                        render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_box ) ) );
+                    }
+                }
 
-                let mesh_copy = mesh.clone();
+                // let prim_sphere = primitive::SphereIcosahedron::init( mat::Mat3x1 { _val: [ -20f32, -10f32, 0f32 ] }, 5f32 );
 
-                let mut mesh2 = mesh_copy.clone();
-                mesh2._pos.clear();
-                mesh2._pos.extend_from_slice( &[ mat::Mat3x1 { _val: [-1f32+ _time_game, -1f32, -1f32 ] },
-                                                 mat::Mat3x1 { _val: [ 5f32+_time_game, -1f32, -1f32 ] },
-                                                 mat::Mat3x1 { _val: [-1f32+_time_game,  1f32, -1f32 ] },
-                                                 mat::Mat3x1 { _val: [ 4f32+_time_game, -1f32, 15f32 ] },
-                                                 mat::Mat3x1 { _val: [ 6f32+_time_game, -1f32, 15f32 ] },
-                                                 mat::Mat3x1 { _val: [ 4f32+_time_game,  1f32, 15f32 ] }, ] );
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh2 ) ) );
-
-                let prim_box = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ -5f32, -10f32, 5f32 ] },
-                                                   _radius: 5f32 };
-
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_box ) ) );
-
-                let prim_sphere = primitive::SphereIcosahedron::init( mat::Mat3x1 { _val: [ -20f32, -10f32, 0f32 ] }, 5f32 );
-
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_sphere ) ) );
+                // render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_sphere ) ) );
                 
                 let l = &_light;
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( l.clone() ) ) );
@@ -359,13 +328,13 @@ impl IGameLogic for GameLogic {
         }
 
         //camera
-        let fov = 120f32;
+        let fov = 114f32;
         let aspect = 1f32;
         let near = 0.001f32;
         let far = 1000f32;
-        let cam_foc_pos = mat::Mat3x1 { _val: [0f32, 0f32, 5f32] };
-        let cam_up = mat::Mat3x1 { _val: [0f32, 1f32, 0f32] };
-        let cam_pos = mat::Mat3x1 { _val: [5f32, 5f32, 20f32] };
+        let cam_foc_pos = mat::Mat3x1 { _val: [0f32, 0f32, 25f32] };
+        let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
+        let cam_pos = mat::Mat3x1 { _val: [65f32, 65f32, 20f32] };
         let cam_id = 0;
         let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
         ret._cameras.push( cam );
@@ -478,9 +447,12 @@ impl IGameLogic for GameLogic {
         self._cameras[0]._pos_orig = pos_new;
 
         //dummy geometry to render
-        v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
-                                           _light: self._lights[0].clone(),
-                                           _camera: self._cameras[0].clone() } );
+        v.push( RenderObj::BoardGeometry {
+            _time_game: self._state._time_game,
+            _light: self._lights[0].clone(),
+            _camera: self._cameras[0].clone(),
+            _gamestate: self._state.clone()
+        } );
         
         self._state._time_game -= 0.01;
 

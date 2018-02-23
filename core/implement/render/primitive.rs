@@ -15,6 +15,7 @@ use self::mazth::mat;
 pub struct Poly6 {
     /// # _pos := center of the box
     pub _pos: mat::Mat3x1< f32 >,
+    pub _scale: mat::Mat3x1< f32 >,
     /// # _radius := approximation of the box size
     pub _radius: f32,
 }
@@ -27,14 +28,14 @@ impl i_ele::IObjImpl for Poly6 {
 
         //store vertex data
         {
-            let x0 = self._pos[0] - self._radius/2.0;
-            let x1 = self._pos[0] + self._radius/2.0;
+            let x0 = self._pos[0] - self._radius/2.0 * self._scale[0];
+            let x1 = self._pos[0] + self._radius/2.0 * self._scale[0];
 
-            let y0 = self._pos[1] - self._radius/2.0;
-            let y1 = self._pos[1] + self._radius/2.0;
+            let y0 = self._pos[1] - self._radius/2.0 * self._scale[1];
+            let y1 = self._pos[1] + self._radius/2.0 * self._scale[1];
 
-            let z0 = self._pos[2] - self._radius/2.0;
-            let z1 = self._pos[2] + self._radius/2.0;
+            let z0 = self._pos[2] - self._radius/2.0 * self._scale[2];
+            let z1 = self._pos[2] + self._radius/2.0 * self._scale[2];
 
             let mut pos = vec![];
             let mut normal = vec![];

@@ -70,8 +70,9 @@ impl Cam {
             _view_xform: math::util::look_at( pos, focus, up ),
         }
     }
-    pub fn update_pos( & mut self, pos: Mat3x1< f32 > ) {
+    pub fn update_pos( & mut self, pos: Mat3x1< f32 >, focus: Mat3x1< f32 > ) {
         self._pos = pos;
+        self._focus = focus;
         self._view_xform = math::util::look_at( pos, self._focus, self._up );
     }
 }

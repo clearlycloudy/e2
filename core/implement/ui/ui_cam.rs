@@ -11,6 +11,7 @@ pub struct UiCam {
     pub _mouse_r_down: bool,
     pub _mouse_pos_down: (f32,f32),
     pub _mouse_pos: (f32,f32),
+    pub _move: (isize, isize, isize),
 }
 
 impl Default for UiCam {
@@ -18,8 +19,9 @@ impl Default for UiCam {
         Self {
             _trackball: Default::default(),
             _mouse_r_down: false,
-            _mouse_pos_down: (0., 0.),
-            _mouse_pos: (0., 0.),
+            _mouse_pos_down: ( 0., 0.),
+            _mouse_pos: ( 0., 0. ),
+            _move: ( 0, 0, 0 ),
         }
     }
 }
@@ -36,6 +38,30 @@ impl UiCam {
                 self._mouse_r_down = false;
                 self._mouse_pos_down = self._mouse_pos;
                 info!( "mouse r up" );
+            },
+            &InputFiltered::Button { key: KeyCode::W, state: State::Press } => {
+                self._move.0 += 1;
+                info!( "W pressed" );
+            },
+            &InputFiltered::Button { key: KeyCode::S, state: State::Press } => {
+                self._move.0 -= 1;
+                info!( "S pressed" );
+            },
+            &InputFiltered::Button { key: KeyCode::A, state: State::Press } => {
+                self._move.1 -= 1;
+                info!( "A pressed" );
+            },
+            &InputFiltered::Button { key: KeyCode::D, state: State::Press } => {
+                self._move.1 += 1;
+                info!( "D pressed" );
+            },
+            &InputFiltered::Button { key: KeyCode::Z, state: State::Press } => {
+                self._move.2 -= 1;
+                info!( "Z pressed" );
+            },
+            &InputFiltered::Button { key: KeyCode::X, state: State::Press } => {
+                self._move.2 += 1;
+                info!( "X pressed" );
             },
             &InputFiltered::MouseCoord( c, v) => {
                 match c {
@@ -76,7 +102,9 @@ impl UiCam {
                     _ => {}
                 }
             },
-            _ => {},
+            other => {
+                // info!( "{:?}", other );
+            },
         }        
     }
 }

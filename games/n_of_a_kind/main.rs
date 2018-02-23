@@ -446,21 +446,37 @@ impl IGameLogic for GameLogic {
             v.push( initial_render );
         }
 
-        //update camera
-        if self._uicam._mouse_r_down {
-            let rot_matrix = self._uicam._trackball.get_rot().to_rotation_matrix( true );
-
-            let offset = mat::Mat4x1 { _val: [ self._cameras[0]._pos_orig[0] - self._cameras[0]._focus[0],
-                                               self._cameras[0]._pos_orig[1] - self._cameras[0]._focus[1],
-                                               self._cameras[0]._pos_orig[2] - self._cameras[0]._focus[2],
-                                               0. ] };
-            
-            let pos_update = rot_matrix.mul_mat4x1( & offset ).unwrap();
-
-            let pos_new = self._cameras[0]._focus.plus( & mat::Mat3x1 { _val: [ pos_update[0], pos_update[1], pos_update[2] ] } ).unwrap();
-            self._cameras[0].update_pos( pos_new );
-        }
         
+        //update camera
+        
+        let mut focus = self._cameras[0]._focus.clone();
+        let mut pos = self._cameras[0]._pos_orig;
+        self._cameras[0]._pos_orig = pos;
+
+        let axis_front = focus.minus( & pos ).unwrap().normalize().unwrap();
+        let axis_right = axis_front.cross( & self._cameras[0]._up ).unwrap().normalize().unwrap();
+
+        let move_front = axis_front.scale( self._uicam._move.0 as f32 * 0.3 ).unwrap();
+        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 ).unwrap();
+        let move_up = self._cameras[0]._up.normalize().unwrap().scale( self._uicam._move.2 as f32 * 0.3 ).unwrap();
+        
+        pos = pos.plus( & move_front.plus( & move_right ).unwrap().plus( & move_up ).unwrap() ).unwrap();
+        self._uicam._move = ( 0, 0, 0 );
+
+        let rot_matrix = self._uicam._trackball.get_rot().to_rotation_matrix( true );
+        self._uicam._trackball.reset_rot();
+        let offset = mat::Mat4x1 { _val: [ pos[0] - focus[0],
+                                           pos[1] - focus[1],
+                                           pos[2] - focus[2],
+                                           0. ] };
+        
+        let pos_update = rot_matrix.mul_mat4x1( & offset ).unwrap();
+
+        let pos_new = focus.plus( & mat::Mat3x1 { _val: [ pos_update[0], pos_update[1], pos_update[2] ] } ).unwrap();
+        self._cameras[0].update_pos( pos_new, focus );
+
+        self._cameras[0]._pos_orig = pos_new;
+
         //dummy geometry to render
         v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
                                            _light: self._lights[0].clone(),

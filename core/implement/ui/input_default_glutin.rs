@@ -85,6 +85,7 @@ impl< 'a > From< & 'a glutin::Event > for InputFiltered {
                         '7' => InputFiltered::Button { key: KeyCode::Num7, state: State::Press },
                         '8' => InputFiltered::Button { key: KeyCode::Num8, state: State::Press },
                         '9' => InputFiltered::Button { key: KeyCode::Num9, state: State::Press },
+                        ' ' => InputFiltered::Button { key: KeyCode::Space, state: State::Press },
                         _ => {
                             trace!("key events ignored: {:?}", e );
                             InputFiltered::Ignored

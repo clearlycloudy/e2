@@ -26,4 +26,24 @@ fn test_parse_md5comp(){
         Err( e ) => panic!( e ),
     };
     // println!( "{:?}", comp );
+
+    let mut pos = vec![];
+    let mut nor = vec![];
+    for i in _comp._meshcomputes.iter() {
+        for j in i._tris.iter() {
+            for k in 0..3 {
+                let idx_vert = j._vert_indices[ k ];
+                let vert = & i._verts[ idx_vert as usize ];
+                pos.push( vert._pos );
+                nor.push( vert._normal );
+            }
+        }
+    }
+    println!( "min bbox pos: {:?}", _comp._bbox_lower );
+    println!( "max bbox pos: {:?}", _comp._bbox_upper );
+    
+    assert!( pos.len() % 3 == 0 );
+    assert!( nor.len() % 3 == 0 );
+    // println!( "pos: {:?}", pos );
+    // println!( "nor: {:?}", nor );
 }

@@ -40,7 +40,7 @@ pub trait IKernel < W: IWindow,
 
         #[allow(unused_mut)]
         let mut sigs_for_window = vec![];
-
+        
         while running {
 
             //process windowing events into buffer

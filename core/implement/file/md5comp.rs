@@ -6,21 +6,21 @@ use self::mazth::{ mat::Mat3x1, quat::Quat };
 use implement::file::md5rig;
 use implement::file::md5mesh;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VertCompute {
     pub _pos: [f32;3],
     pub _normal: [f32;3],
 }
 
-type Tri = md5mesh::Md5Tri;
+pub type Tri = md5mesh::Md5Tri;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MeshCompute {
     pub _verts: Vec< VertCompute >,
     pub _tris: Vec< Tri >,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ComputeCollection {
     pub _meshcomputes: Vec< MeshCompute >,
     pub _bbox_lower: [f32;3],
@@ -52,6 +52,7 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
         _bbox_lower: [0f32;3],
         _bbox_upper: [0f32;3],
     };
+
     for i in &m._meshes {
         let mut mc = MeshCompute {
             _verts: vec![],
@@ -121,11 +122,31 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
         }
         mc._tris.extend_from_slice( &i._tris[..] );
         cc._meshcomputes.push( mc );
-        //todo: bbox
         // for h in 0..3 {
         //     cc._bbox_lower[h] = pose_start._bbox_lower[h];
         //     cc._bbox_upper[h] = pose_start._bbox_upper[h];
         // }
     }
+
+    let mut max_pos = [0., 0., 0.];
+    let mut min_pos = [0., 0., 0.];
+    for i in cc._meshcomputes.iter() {
+        for j in i._tris.iter() {
+            for k in 0..3 {
+                let idx_vert = j._vert_indices[ k ];
+                let vert = & i._verts[ idx_vert as usize ];
+                for h in 0..3 {
+                    if max_pos[h] < vert._pos[h] {
+                        max_pos[h] = vert._pos[h];
+                    }
+                    if min_pos[h] > vert._pos[h] {
+                        min_pos[h] = vert._pos[h];
+                    }
+                }
+            }
+        }
+    }
+    cc._bbox_lower = min_pos;
+    cc._bbox_upper = max_pos;
     Ok( cc )
 }

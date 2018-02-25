@@ -3,7 +3,7 @@ extern crate mazth;
 use self::mazth::mat::{ Mat2x1, Mat3x1 };
 use self::mazth::quat::Quat;
 
-// use std::f32::consts::PI;
+//use std::f32::consts::PI;
 
 pub struct TrackBall {
     _rot: Quat<f32>,
@@ -50,30 +50,38 @@ impl TrackBall {
         let delta = pos_current.minus( &self._pos_last ).unwrap();
         
         if delta[0].abs() > 0.001 || delta[1].abs() > 0.001 || delta[2].abs() > 0.001 {
+            let mag_p_last = self._pos_last.magnitude().unwrap();
+            let mag_p = pos_current.magnitude().unwrap();
+            assert!( mag_p > 0.99 && mag_p < 1.01);
+            assert!( mag_p_last > 0.99 && mag_p_last < 1.01);
             let angle = ( self._pos_last.dot( & pos_current ).unwrap()
-                          / ( self._pos_last.magnitude().unwrap() * pos_current.magnitude().unwrap() ) )
+                          / ( mag_p * mag_p_last ) )
                 .acos();
+            
+            if angle.abs() > 0.001 {
 
-            let axis = self._pos_last.cross( & pos_current ).unwrap().normalize().unwrap();
+                let axis = self._pos_last.cross( & pos_current ).unwrap().normalize().unwrap();
 
-            let q = Quat::<f32>::init_from_axis_angle_radian( ( axis, 3. * angle ) ).normalize();
+                let q = Quat::<f32>::init_from_axis_angle_radian( ( axis, angle ) ).normalize();
 
-            // println!( "axis: {:?}", axis );
-            // println!( "angle: {}", angle );
+                // println!( "axis: {:?}", axis );
+                // println!( "angle: {}", angle );
 
-            self._rot = self._rot.mul( q ).normalize();
+                self._rot = self._rot.mul( q ).normalize();
+            }
         }
     }
+    ///project cursor position onto trackball sphere and normalize it to unit vector
     fn project_cursor_to_hemisphere( & self, pos: & Mat2x1<f32> ) -> Mat3x1<f32> {
 
         let mut p : Mat3x1<f32> = Default::default();
-        let r = self._w.min( self._h ) * 1.5; //radius of the trackball
+        let r = self._w.min( self._h ) * 2.; //radius of the trackball
         p[0] = ( pos[0] - self._w / 2. ) / r; //normalize, x-direction
         p[2] = ( pos[1] - self._h / 2. ) / r; //normalize, z-direction, assumed same as camera up-vector
         let mut d = p.magnitude().unwrap();
         if d > 1. {
-            p[0] = p[0] / (d * d);
-            p[2] = p[2] / (d * d);
+            p[0] = p[0] / d;
+            p[2] = p[2] / d;
             d = 1.;
         }
         let elevation = ( 1. - d * d ).sqrt();

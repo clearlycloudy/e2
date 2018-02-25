@@ -235,7 +235,7 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                 }
                 assert!( mesh._pos.len() % 3 == 0 );
                 assert!( mesh._normal.len() == mesh._pos.len() );
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
+                // render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
                 
 
                 let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
@@ -311,7 +311,7 @@ impl IGameLogic for GameLogic {
             Err( e ) => panic!( e ),
         };
         assert!( 5 < posecollection._frames.len() );
-        let _comp = match md5comp::process( & posecollection, & mesh, 0, 1, 1f32 ){
+        let _comp = match md5comp::process( & posecollection, & mesh, 5, 6, 1f32 ){
             Ok( o ) => o,
             Err( e ) => panic!( e ),
         };

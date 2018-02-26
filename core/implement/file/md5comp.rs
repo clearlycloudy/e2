@@ -28,10 +28,10 @@ pub struct ComputeCollection {
 }
 
 pub fn process( pc: & md5rig::PoseCollection, m: & md5mesh::Md5MeshRoot, pose_index_start: u64, pose_index_end: u64, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
-    if pose_index_start > pc._frames.len() as u64 {
+    if pose_index_start >= pc._frames.len() as u64 {
         return Err( "pose_index_start out of bounds." )
     }
-    if pose_index_end > pc._frames.len() as u64 {
+    if pose_index_end >= pc._frames.len() as u64 {
         return Err( "pose_index_start out of bounds." )
     }
     let interp_clamped = if 0f32 > interp {
@@ -65,6 +65,7 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             };
             for k in 0..j._weight_count {
                 let weight_index = j._weight_start + k;
+
                 let w = &i._weights[ weight_index as usize ];
                 let joint_index = w._joint_index;
                 if joint_index >= pose_start._joints.len() as u64 {
@@ -76,7 +77,7 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
                 let pose_start_rigjoint = & pose_start._joints[ joint_index as usize ];
                 let pose_end_rigjoint = & pose_end._joints[ joint_index as usize ];
                 //get position of the weight after transformation with joint orientation
-                let pos_quat = Quat::<f32>::init_from_vals( w._pos[0], w._pos[1], w._pos[2], 0f32 );
+                let pos_quat = Quat::<f32>::init_from_vals_raw( w._pos[0], w._pos[1], w._pos[2], 0f32 );
                 let orient_interp = Quat::<f32>::interpolate_slerp( pose_start_rigjoint._orient, pose_end_rigjoint._orient, interp );
                 let orient_inv = orient_interp.inverse().normalize();
                 let pos_transform = pose_start_rigjoint._orient.mul( pos_quat ).mul( orient_inv );
@@ -113,7 +114,8 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             let v01 = v1.minus( &v0 ).unwrap();
             let v02 = v2.minus( &v0 ).unwrap();
             let n = v02.cross( &v01 ).expect("cross product for vertex normal invalid")
-                       .normalize().expect("normalize for vertex normal invalid");
+                .normalize().expect("normalize for vertex normal invalid");
+            
             for k in 0..3 {
                 mc._verts[ v0_index as usize ]._normal[ k ] = n._val[ k ];
                 mc._verts[ v1_index as usize ]._normal[ k ] = n._val[ k ];
@@ -130,6 +132,13 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
 
     let mut max_pos = [0., 0., 0.];
     let mut min_pos = [0., 0., 0.];
+
+    // for i in cc._meshcomputes.iter() {
+    //     for j in i._verts.iter_mut() {
+    //         j = j._normal.normalize().expect( "normalization unsuccessful." );
+    //     }
+    // }
+    
     for i in cc._meshcomputes.iter() {
         for j in i._tris.iter() {
             for k in 0..3 {

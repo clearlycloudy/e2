@@ -167,13 +167,13 @@ impl From< (GameState, GameStateChangeApply) > for GameState {
 pub enum RenderObj {
     InitialRender {
         _path_shader_vs: String,
-        _path_shader_fs: String
+        _path_shader_fs: String,
     },
     TestGeometry {
         _time_game: f32,
         _light: light::LightAdsPoint,
         _camera: camera::Cam,
-        _md5: md5comp::ComputeCollection,
+        _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot),
     },
 }
 
@@ -214,8 +214,16 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
 
                 //set triangle vert positions and normals
                 let mut mesh = mesh::Mesh::init( 0 );
+                
+                let ( posecollection, md5mesh ) = _md5;
 
-                for i in _md5._meshcomputes.iter() {
+                let frame = ( _time_game as usize % (posecollection._frames.len()-1) ) as u64;
+                let md5_interp = match md5comp::process( & posecollection, & md5mesh, frame, frame+1, 0.5f32 ){
+                    Ok( o ) => o,
+                    Err( e ) => panic!( e ),
+                };
+
+                for i in md5_interp._meshcomputes.iter() {
                     for j in i._tris.iter() {
                         for k in 0..3 {
                             let idx_vert = j._vert_indices[ k ];
@@ -224,10 +232,16 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                             mesh._pos.push( mat::Mat3x1 { _val: [ vert._pos[0],
                                                                   vert._pos[1],
                                                                   vert._pos[2] ] } );
-                                            
-                            mesh._normal.push( mat::Mat3x1 { _val: [ vert._normal[0],
-                                                                     vert._normal[1],
-                                                                     vert._normal[2] ] } );
+
+                            // mesh._normal.push( mat::Mat3x1 { _val: [ vert._normal[0],
+                            //                                          vert._normal[1],
+                            //                                          vert._normal[2] ] } );
+
+                            let n = mat::Mat3x1 { _val: [ vert._normal[0],
+                                                          vert._normal[1],
+                                                          vert._normal[2] ] }.normalize().unwrap();
+                            
+                            mesh._normal.push( n );
 
                             mesh._tc.push( mat::Mat2x1 { _val: [ 0f32, 0f32 ] } );
                         }
@@ -238,11 +252,11 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
                 
 
-                let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
-                                                   _scale: mat::Mat3x1 { _val: [ 1., 1., 0.001 ] },
-                                                   _radius: 5f32 };
+                // let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
+                //                                    _scale: mat::Mat3x1 { _val: [ 1., 1., 0.001 ] },
+                //                                    _radius: 5f32 };
 
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_plane ) ) );
+                // render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_plane ) ) );
                 
                 let l = &_light;
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( l.clone() ) ) );
@@ -264,7 +278,7 @@ pub struct GameLogic {
     _path_shader_fs: String,
     _state: GameState,
     _uicam: UiCam,
-    _md5: md5comp::ComputeCollection,
+    _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot ),
 }
 
 impl IGameLogic for GameLogic {
@@ -287,7 +301,7 @@ impl IGameLogic for GameLogic {
         let far = 1000f32;
         let cam_foc_pos = mat::Mat3x1 { _val: [0f32, 0f32, 0f32] };
         let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
-        let cam_pos = mat::Mat3x1 { _val: [10f32, 10f32, 10f32] };
+        let cam_pos = mat::Mat3x1 { _val: [75f32, 75f32, 150f32] };
         let cam_id = 0;
         let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
 
@@ -307,10 +321,10 @@ impl IGameLogic for GameLogic {
             Err( e ) => panic!( e ),
         };
         assert!( 5 < posecollection._frames.len() );
-        let _comp = match md5comp::process( & posecollection, & mesh, 5, 6, 1f32 ){
-            Ok( o ) => o,
-            Err( e ) => panic!( e ),
-        };
+        // let _comp = match md5comp::process( & posecollection, & mesh, 0, 1, 0.5f32 ){
+        //     Ok( o ) => o,
+        //     Err( e ) => panic!( e ),
+        // };
         // println!( "{:?}", comp );
         
         let mut ret = GameLogic {
@@ -326,7 +340,7 @@ impl IGameLogic for GameLogic {
                 _trackball: TrackBall::new(500.,500.),
                 .. Default::default()
             },
-            _md5: _comp,
+            _md5: ( posecollection, mesh ),
         };
         
         //lights
@@ -431,7 +445,7 @@ impl IGameLogic for GameLogic {
         let axis_right = axis_front.cross( & self._camera._up ).unwrap().normalize().unwrap();
 
         let move_front = axis_front.scale( self._uicam._move.0 as f32 * 0.3 ).unwrap();
-        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.1 ).unwrap();
+        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.75 ).unwrap();
         let move_up = self._camera._up.normalize().unwrap().scale( self._uicam._move.2 as f32 * 0.3 ).unwrap();
         
         pos = pos.plus( & move_front.plus( & move_right ).unwrap().plus( & move_up ).unwrap() ).unwrap();
@@ -457,7 +471,7 @@ impl IGameLogic for GameLogic {
                                            _camera: self._camera.clone(),
                                            _md5: self._md5.clone() } );
         
-        self._state._time_game -= 0.01;
+        self._state._time_game += 0.4;
 
         v
     }

@@ -51,7 +51,9 @@ impl i_ele::IObjImpl for Mesh {
                 pos.extend_from_slice( &self._pos[i]._val[..] );
             }
             for i in 0..self._normal.len() {
-                normal.extend_from_slice( &self._normal[i]._val[..] );
+                let n = &self._normal[i].normalize().unwrap();
+                // normal.extend_from_slice( &self._normal[i]._val[..] );
+                normal.extend_from_slice( &n._val[..] );
             }
             for i in 0..self._tc.len() {
                 tc.extend_from_slice( &self._tc[i]._val[..] );

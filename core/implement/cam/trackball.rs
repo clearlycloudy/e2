@@ -53,7 +53,7 @@ impl TrackBall {
         
         let delta = pos_current.minus( &self._pos_last ).unwrap();
         
-        if delta[0].abs() > 0.001 || delta[1].abs() > 0.001 || delta[2].abs() > 0.001 {
+        if delta[0].abs() > 0.0001 || delta[1].abs() > 0.0001 || delta[2].abs() > 0.0001 {
             let mag_p_last = self._pos_last.magnitude().unwrap();
             let mag_p = pos_current.magnitude().unwrap();
             assert!( mag_p > 0.99 && mag_p < 1.01);
@@ -62,7 +62,7 @@ impl TrackBall {
                           / ( mag_p * mag_p_last ) )
                 .acos();
             
-            if angle.abs() > 0.001 {
+            if angle.abs() > 0.0001 {
 
                 let axis = self._pos_last.cross( & pos_current ).unwrap().normalize().unwrap();
 
@@ -79,7 +79,7 @@ impl TrackBall {
     fn project_cursor_to_hemisphere( & self, pos: & Mat2x1<f32> ) -> Mat3x1<f32> {
 
         let mut p : Mat3x1<f32> = Default::default();
-        let r = self._w.min( self._h ) * 2.; //radius of the trackball
+        let r = self._w.min( self._h ) * 1.5; //radius of the trackball
         p[0] = ( pos[0] - self._w / 2. ) / r; //normalize, x-direction
         p[2] = ( pos[1] - self._h / 2. ) / r; //normalize, z-direction, assumed same as camera up-vector
         let mut d = p.magnitude().unwrap();

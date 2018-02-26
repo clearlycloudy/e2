@@ -27,7 +27,7 @@ pub enum Token {
     Weight,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Md5Mesh {
     pub _shader: String,
     pub _numverts: u64,
@@ -38,7 +38,7 @@ pub struct Md5Mesh {
     pub _weights: Vec< Md5Weight >,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Md5Joint {
     pub _name: String,
     pub _parent_index: i64,
@@ -47,7 +47,7 @@ pub struct Md5Joint {
     pub _rot: Quat<f32>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Md5Vert {
     pub _index: u64,
     pub _tex_coords: [f32;2],
@@ -65,7 +65,7 @@ pub struct Md5Tri {
     pub _vert_indices: [u64;3],
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Md5Weight {
     pub _index: u64,
     pub _joint_index: u64,
@@ -73,7 +73,7 @@ pub struct Md5Weight {
     pub _pos: [f32;3],
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Md5MeshRoot {
     pub _md5ver: u64,
     pub _cmdline: String,

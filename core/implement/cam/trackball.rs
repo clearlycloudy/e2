@@ -1,3 +1,6 @@
+///create a trackball with a radius that is
+///proportional to minimum of window width and height.
+
 extern crate mazth;
 
 use self::mazth::mat::{ Mat2x1, Mat3x1 };
@@ -41,6 +44,7 @@ impl TrackBall {
     // pub fn start_motion( & mut self, pos: & Mat2x1<f32> ){
     //     self._pos_last = self.project_cursor_to_hemisphere( pos );
     // }
+    ///updates the rotation quaternion based on input cursor positions
     pub fn move_motion( & mut self, pos_start: & Mat2x1<f32>, pos: & Mat2x1<f32> ){
 
         self._pos_last = self.project_cursor_to_hemisphere( pos_start );
@@ -91,6 +95,7 @@ impl TrackBall {
     pub fn get_rot( & self ) -> & Quat<f32> {
         & self._rot
     }
+    ///resets rotation to none
     pub fn reset_rot( & mut self ) {
         self._rot = Default::default();
     }

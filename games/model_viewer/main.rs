@@ -235,7 +235,7 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                 }
                 assert!( mesh._pos.len() % 3 == 0 );
                 assert!( mesh._normal.len() == mesh._pos.len() );
-                // render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
                 
 
                 let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
@@ -243,10 +243,6 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                                                    _radius: 5f32 };
 
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_plane ) ) );
-
-                // let prim_sphere = primitive::SphereIcosahedron::init( mat::Mat3x1 { _val: [ -20f32, -10f32, 0f32 ] }, 5f32 );
-
-                // render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_sphere ) ) );
                 
                 let l = &_light;
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( l.clone() ) ) );

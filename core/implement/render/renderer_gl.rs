@@ -1,5 +1,8 @@
 extern crate pretty_env_logger;
 extern crate gl;
+extern crate chrono;
+
+use self::chrono::prelude::*;
 
 use ::std::str;
 use ::std::ops::DerefMut;
@@ -30,7 +33,7 @@ pub struct Renderer {
     _draw_groups: RefCell< Vec< renderdevice_gl::RenderDrawGroup > >,
     _vaos: Vec< gl::types::GLuint >,
     _vbos: Vec< gl::types::GLuint >,
-    _objs: RefCell< Vec< Box< i_ele::Ele > > >,
+    _objs: Vec< i_ele::Ele >,
     _uniforms: RefCell< renderdevice_gl::RenderUniformCollection >,
     _draw_group_uniforms: RefCell< Vec< Vec< u64 > > >,
     _shaders_compiled: Vec< gl::types::GLuint >,
@@ -76,7 +79,7 @@ impl IRenderer for Renderer {
     fn init() -> Result< Self, & 'static str > {
         Renderer::init()
     }
-    fn process_render_events( & mut self, e: & [ Self::EventRender ] ) -> Result< (), & 'static str > {
+    fn process_render_events( & mut self, e: Vec< Self::EventRender > ) -> Result< (), & 'static str > {
         //first time initialization
         if !self._is_init {
             info!("renderer: first time initialization.");
@@ -93,19 +96,32 @@ impl IRenderer for Renderer {
 
         //handle events
         //todo: handle return values from calls
-        for i in e.iter() {
+        for i in e {
+            let t0 = Local::now();
             match i {
-                & Event::AddObj( ref x ) => {
-                    self.add_obj( dummy_str, x.clone() )?;
+                Event::AddObj( x ) => {
+                    self.add_obj( dummy_str, x )?;
+                    let t1 = Local::now();
+                    let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
+                    info!( "t_render_add_obj: {} ms", t_delta );
                 },
-                & Event::LoadShader( ref x ) => {
+                Event::LoadShader( x ) => {
                     self.load_shader( x.as_slice() )?;
+                    let t1 = Local::now();
+                    let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
+                    info!( "t_render_load_shader: {} ms", t_delta );
                 },
-                & Event::LoadTexture( ref s, ref data, ref w, ref h ) => {
-                    self.load_texture( s.clone(), data.as_slice(), *w, *h )?;
+                Event::LoadTexture( s, data, w, h ) => {
+                    self.load_texture( s, &data, w, h )?;
+                    let t1 = Local::now();
+                    let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
+                    info!( "t_render_load_texture: {} ms", t_delta );
                 },
-                & Event::CreateDrawGroup( ref x ) => {
-                    self.create_draw_group( *x )?;
+                Event::CreateDrawGroup( x ) => {
+                    self.create_draw_group( x )?;
+                    let t1 = Local::now();
+                    let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
+                    info!( "t_render_create_draw_group: {} ms", t_delta );
                 },
             }
             util_gl::check_last_op();
@@ -113,12 +129,34 @@ impl IRenderer for Renderer {
 
         //some hardcoded draw calls in preparation for rendering
         //todo: put these in a configurable hook
+
+        let t0 = Local::now();
+
         self.add_obj( dummy_str, i_ele::Ele::init( render_commands::CmdDrawGroupBind::init( draw_group ) ) ).is_ok();
 
+        let t1 = Local::now();
+        
         self.add_obj( dummy_str, i_ele::Ele::init( render_commands::CmdDrawGroupDependentUniforms::init( draw_group, &[0u64,1u64] ) ) ).is_ok();
-        
+
+        let t2 = Local::now();
+
         self.add_obj( dummy_str, i_ele::Ele::init( render_commands::CmdDrawGroupDispatch::init( draw_group ) ) ).is_ok();
-        
+
+        let t3 = Local::now();
+
+        {
+            let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
+            info!( "t_draw_group_bind: {} ms", t_delta );
+        }
+        {
+            let t_delta = t2.signed_duration_since(t1).num_milliseconds() as f64;
+            info!( "t_draw_group_dependent_uniforms: {} ms", t_delta );
+        }
+        {
+            let t_delta = t3.signed_duration_since(t2).num_milliseconds() as f64;
+            info!( "t_draw_group_dispatch: {} ms", t_delta );
+        }
+
         Ok( () )
     }
 }
@@ -134,7 +172,7 @@ impl Renderer {
             _draw_groups: RefCell::new( vec![] ),
             _vaos: vec![],
             _vbos: vec![],
-            _objs: RefCell::new( vec![] ),
+            _objs: vec![],
             _uniforms: RefCell::new( Default::default() ),
             _draw_group_uniforms: RefCell::new( vec![] ),
             _shaders_compiled: vec![],
@@ -212,11 +250,11 @@ impl Renderer {
     #[allow(unused)]
     pub fn add_obj( & mut self, name: &str, e: i_ele::Ele ) -> Result< ( usize ), & 'static str > {
 
-        let index = self._objs.borrow_mut().len();
-        self._objs.borrow_mut().push( Box::new( e ) );
+        let index = self._objs.len();
+        self._objs.push( e );
 
         //load component data
-        match self._objs.borrow_mut()[index].update_components_from_impl() {
+        match self._objs[index].update_components_from_impl() {
             Err( e ) => { return Err( e ) },
             _ => (),
         }
@@ -224,7 +262,10 @@ impl Renderer {
         //detect command to flush and process all data in buffer
         let mut trigger_to_process_objs = false;
         let mut group_id = 0;
-        for j in self._objs.borrow_mut()[index]._components.iter() {
+
+        // println!( "component numbers: {}", self._objs.borrow_mut()[index]._components.len() );
+        
+        for j in self._objs[index]._components.iter() {
             match j.as_any().downcast_ref::< i_component::ComponentDrawGroupDispatch >() {
                 Some( o ) => {
                     trace!("detected trigger for draw group dispatch");
@@ -239,16 +280,16 @@ impl Renderer {
             Renderer::process_objs( self, group_id )?
         }
 
-        Ok( self._objs.borrow_mut().len() )  
+        Ok( self._objs.len() )
     }
-    pub fn process_objs( renderer: & mut Renderer, group_index: usize ) -> Result< (), & 'static str > {       
-        trace!("objects size: {}", renderer._objs.borrow_mut().len() );
-        
-        for i in renderer._objs.borrow_mut().iter() {
+    pub fn process_objs( renderer: & mut Renderer, group_index: usize ) -> Result< (), & 'static str > {        
 
-            for j in i._components.iter() {
+        let drained = renderer._objs.drain(..).collect::<Vec<_>>();
 
-                //downcasting: https://stackoverflow.com/questions/33687447/how-to-get-a-struct-reference-from-a-boxed-trait
+        for i in drained {
+
+            for j in i._components {
+
                 match j.as_any().downcast_ref::< i_component::ComponentRenderBuffer >() {
                     Some( o ) => {
                         trace!("buffer flushed");
@@ -303,10 +344,12 @@ impl Renderer {
                     },
                     None => (),
                 }
-                return Err( &"unmatching render command" )
+                return Err( &"unmatching render command" );
             }
         }
-        renderer._objs.borrow_mut().clear();
+
+        assert_eq!(renderer._objs.len(), 0 );
+
         Ok( () )
     }
     pub fn reset_draw_group_data( & self, group_indices: &[ usize ] ) -> Result< (), & 'static str > {
@@ -345,8 +388,7 @@ impl Renderer {
                 match renderer._draw_groups.borrow_mut()[ i ].draw_buffer_all() {
                     Err( e ) => return Err( e ),
                     _ => (),
-                }                
-                // index += 1;
+                }
             }
         }
         Ok( () )

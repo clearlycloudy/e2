@@ -233,15 +233,9 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                                                                   vert._pos[1],
                                                                   vert._pos[2] ] } );
 
-                            // mesh._normal.push( mat::Mat3x1 { _val: [ vert._normal[0],
-                            //                                          vert._normal[1],
-                            //                                          vert._normal[2] ] } );
-
-                            let n = mat::Mat3x1 { _val: [ vert._normal[0],
-                                                          vert._normal[1],
-                                                          vert._normal[2] ] }.normalize().unwrap();
-                            
-                            mesh._normal.push( n );
+                            mesh._normal.push( mat::Mat3x1 { _val: [ vert._normal[0],
+                                                                     vert._normal[1],
+                                                                     vert._normal[2] ] } );
 
                             mesh._tc.push( mat::Mat2x1 { _val: [ 0f32, 0f32 ] } );
                         }

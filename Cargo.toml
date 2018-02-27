@@ -37,9 +37,9 @@ chrono = "0.4.0"
 name = "e2r_example_kernel_impl001"
 path = "core/example/example_kernel_impl001.rs"
 
-[[bin]]
-name = "n_of_a_kind"
-path = "games/n_of_a_kind/mod.rs"
+# [[bin]]
+# name = "n_of_a_kind"
+# path = "games/n_of_a_kind/mod.rs"
 
 [[bin]]
 name = "model_viewer"

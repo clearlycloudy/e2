@@ -10,6 +10,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
+use std::rc::Rc;
 
 use self::e2rcore::interface::i_ele;
 use self::e2rcore::interface::i_game_logic::IGameLogic;
@@ -173,7 +174,8 @@ pub enum RenderObj {
         _time_game: f32,
         _light: light::LightAdsPoint,
         _camera: camera::Cam,
-        _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot),
+        // _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot),
+        _md5: ( Rc<md5rig::PoseCollection>, Rc<md5mesh::Md5MeshRoot> ),
     },
 }
 
@@ -272,7 +274,7 @@ pub struct GameLogic {
     _path_shader_fs: String,
     _state: GameState,
     _uicam: UiCam,
-    _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot ),
+    _md5: ( Rc< md5rig::PoseCollection >, Rc< md5mesh::Md5MeshRoot > ),
 }
 
 impl IGameLogic for GameLogic {
@@ -334,7 +336,7 @@ impl IGameLogic for GameLogic {
                 _trackball: TrackBall::new(500.,500.),
                 .. Default::default()
             },
-            _md5: ( posecollection, mesh ),
+            _md5: ( Rc::new( posecollection) , Rc::new( mesh ) ),
         };
         
         //lights
@@ -463,7 +465,7 @@ impl IGameLogic for GameLogic {
         v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
                                            _light: self._lights[0].clone(),
                                            _camera: self._camera.clone(),
-                                           _md5: self._md5.clone() } );
+                                           _md5: ( self._md5.0.clone(), self._md5.1.clone() ) } );
         
         self._state._time_game += 0.4;
 

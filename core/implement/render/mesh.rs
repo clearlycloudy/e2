@@ -44,31 +44,30 @@ impl i_ele::IObjImpl for Mesh {
                 return Err( &"unequal length for position, normal, tc data" )
             }
             let ele_len = self._pos.len();
+
+            // let pos = self._pos.iter()
+            //     .flat_map(|x| x._val[..].to_vec() )
+            //     .collect::<Vec<_>>();
+
+            // let normal = self._normal.iter()
+            //     .flat_map(|x| x.normalize().unwrap()._val[..].to_vec() )
+            //     .collect::<Vec<_>>();
+
+            // let tc = self._tc.iter()
+            //     .flat_map(|x| x._val[..].to_vec() )
+            //     .collect::<Vec<_>>();
+
+            let mut pos = vec![];
+            pos.reserve_exact( 3 * self._pos.len() );
+            self._pos.iter_mut().for_each( |x| pos.append( & mut x._val.to_vec() ) );
+
+            let mut normal = vec![];
+            normal.reserve_exact( 3 * self._normal.len() );
+            self._normal.iter_mut().for_each( |x| normal.append( & mut x.normalize().unwrap()._val.to_vec() ) );
             
-
-            let pos = self._pos.iter()
-                .flat_map(|x| x._val[..].to_vec() )
-                .collect::<Vec<_>>();
-
-            let normal = self._normal.iter()
-                .flat_map(|x| x.normalize().unwrap()._val[..].to_vec() )
-                .collect::<Vec<_>>();
-
-            let tc = self._tc.iter()
-                .flat_map(|x| x._val[..].to_vec() )
-                .collect::<Vec<_>>();
-
-            // let mut pos = vec![];
-            // pos.reserve_exact( 3 * self._pos.len() );
-            // self._pos.iter_mut().for_each( |x| pos.append( & mut x._val.to_vec() ) );
-
-            // let mut normal = vec![];
-            // normal.reserve_exact( 3 * self._normal.len() );
-            // self._normal.iter_mut().for_each( |x| normal.append( & mut x.normalize().unwrap()._val.to_vec() ) );
-            
-            // let mut tc = vec![];
-            // tc.reserve_exact( 2 * self._tc.len() );
-            // self._tc.iter_mut().for_each( |x| tc.append( & mut x._val.to_vec() ) );
+            let mut tc = vec![];
+            tc.reserve_exact( 2 * self._tc.len() );
+            self._tc.iter_mut().for_each( |x| tc.append( & mut x._val.to_vec() ) );
             
             let data_map : HashMap< i_renderobj::BuffDataType, Vec<f32> > =  [ ( i_renderobj::BuffDataType::POS, pos ),
                                                                                  ( i_renderobj::BuffDataType::NORMAL, normal ),

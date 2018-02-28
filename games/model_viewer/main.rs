@@ -1,32 +1,53 @@
-///sample implementation of game logic, also extends the game logic to _game_impl
+///model viewer
 
 extern crate image;
 extern crate rand;
 extern crate mazth;
+extern crate e2rcore;
+extern crate pretty_env_logger;
+// extern crate chrono;
+
+// use self::chrono::prelude::*;
 
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
+use std::rc::Rc;
 
-use interface::i_ele;
-use interface::i_game_logic::IGameLogic;
-use interface::i_ui::{ InputFiltered, KeyCode };
-// use interface::i_camera::ICamera;
-use interface::i_scheduler::IScheduler;
+use self::e2rcore::interface::i_ele;
+use self::e2rcore::interface::i_game_logic::IGameLogic;
+use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode, /*State, Coord*/ };
+use self::e2rcore::interface::i_scheduler::IScheduler;
 
-use implement::render::renderer_gl;
-use implement::render::util_gl;
-use implement::render::texture;
-use implement::render::camera;
-use implement::render::light;
-use implement::render::mesh;
-use implement::render::primitive;
+use self::e2rcore::implement::render::renderer_gl;
+use self::e2rcore::implement::render::util_gl;
+use self::e2rcore::implement::render::texture;
+use self::e2rcore::implement::render::camera;
+use self::e2rcore::implement::render::light;
+use self::e2rcore::implement::render::mesh;
+// use self::e2rcore::implement::render::primitive;
+
+use self::e2rcore::implement::ui::ui_cam::UiCam;
+
+use self::e2rcore::implement::cam::trackball::TrackBall;
 
 use self::mazth::mat;
 
 use self::rand::Rng;
 use self::image::GenericImage;
+
+// use self::rand::distributions::{IndependentSample, Range};
+
+use std::env;
+
+// use std::collections::{ HashSet, HashMap };
+
+use self::e2rcore::interface::i_kernel::IKernel;
+
+use self::e2rcore::implement::kernel::kernel_impl_001::Kernel;
+
+use self::e2rcore::implement::file::*;
 
 //todo: put this somewhere else
 pub fn file_open( file_path: & str ) -> Option<String> {
@@ -40,16 +61,17 @@ pub fn file_open( file_path: & str ) -> Option<String> {
     Some(contents)
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct GameState {
     _exit: bool,
     _continue_compute: bool,
     _time_game: f32,
-    _is_init_run_first_time: bool
+    _is_init_run_first_time: bool,
 }
 
 impl Default for GameState {
     fn default() -> GameState {
+
         GameState {
             _exit: false,
             _continue_compute: false,
@@ -147,8 +169,16 @@ impl From< (GameState, GameStateChangeApply) > for GameState {
 }
 
 pub enum RenderObj {
-    InitialRender { _path_shader_vs: String, _path_shader_fs: String },
-    TestGeometry { _time_game: f32, _light: light::LightAdsPoint, _camera: camera::Cam },
+    InitialRender {
+        _path_shader_vs: String,
+        _path_shader_fs: String,
+    },
+    TestGeometry {
+        _time_game: f32,
+        _light: light::LightAdsPoint,
+        _camera: camera::Cam,
+        _md5_precompute: Rc< Vec<md5comp::ComputeCollection> >,
+    },
 }
 
 
@@ -183,55 +213,29 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
 
                 render_events
             },
-            RenderObj::TestGeometry{ _time_game, _light, _camera } =>{
+            RenderObj::TestGeometry{ _time_game, _light, _camera, _md5_precompute } =>{
+
                 let mut render_events = vec![];
                 
-                //create some meshes for test:
-                //set triangle vert positions and normals
                 let mut mesh = mesh::Mesh::init( 0 );
-                mesh._batch_pos.extend_from_slice( &[ -1f32, -1f32, -1f32,
-                                                       5f32, -1f32, -1f32,
-                                                      -1f32,  1f32, -1f32,
-                                                       4f32, -1f32, 15f32,
-                                                       6f32, -1f32, 15f32,
-                                                       4f32,  1f32, 15f32, ] );
 
-                mesh._batch_normal.extend_from_slice( &[ 0f32, 0f32, 1f32,
-                                                         0f32, 0f32, 1f32,
-                                                         0f32, 0f32, 1f32,
-                                                         0f32, 0f32, 1f32,
-                                                         0f32, 0f32, 1f32,
-                                                         0f32, 0f32, 1f32, ] );
+                let frame = _time_game as usize % _md5_precompute.len();
+
+                mesh._batch_pos = _md5_precompute[frame]._batch_vert.clone();
+                mesh._batch_normal = _md5_precompute[frame]._batch_normal.clone();
+                mesh._batch_tc = _md5_precompute[frame]._batch_tc.clone();
                 
-                mesh._batch_tc.extend_from_slice( &[ 0f32, 0f32,
-                                                     0f32, 0f32,
-                                                     0f32, 0f32,
-                                                     0f32, 0f32,
-                                                     0f32, 0f32,
-                                                     0f32, 0f32, ] );
+                assert!( mesh._batch_pos.len() % 3 == 0 );
+                assert!( mesh._batch_pos.len() == mesh._batch_normal.len() );
+                assert!( mesh._batch_tc.len() / 2 == mesh._batch_pos.len() / 3 );
 
-                let mesh_copy = mesh.clone();
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
+                
+                // let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
+                //                                    _scale: mat::Mat3x1 { _val: [ 1., 1., 0.001 ] },
+                //                                    _radius: 5f32 };
 
-                let mut mesh2 = mesh_copy.clone();
-                mesh2._batch_pos.clear();
-                mesh2._batch_pos.extend_from_slice( &[ -1f32+ _time_game, -1f32, -1f32,
-                                                        5f32+_time_game, -1f32, -1f32,
-                                                        -1f32+_time_game,  1f32, -1f32,
-                                                        4f32+_time_game, -1f32, 15f32,
-                                                        6f32+_time_game, -1f32, 15f32,
-                                                        4f32+_time_game,  1f32, 15f32, ] );
-
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh2 ) ) );
-
-                let prim_box = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ -5f32, -10f32, 5f32 ] },
-                                                   _scale: mat::Mat3x1 { _val: [ 1., 1., 1. ] },
-                                                   _radius: 5f32 };
-
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_box ) ) );
-
-                let prim_sphere = primitive::SphereIcosahedron::init( mat::Mat3x1 { _val: [ -20f32, -10f32, 0f32 ] }, 5f32 );
-
-                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_sphere ) ) );
+                // render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_plane ) ) );
                 
                 let l = &_light;
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( l.clone() ) ) );
@@ -245,15 +249,16 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
 }
 
 pub struct GameLogic {
-    //todo
     _is_init: bool,
-    _lights: Vec< light::LightAdsPoint >, //could move this to be generated by game logic or within a connecting adaptor between game logic and render interface
-    _cameras: Vec< camera::Cam >, //todo: replace with camera wrapper
-    // _cameras_wrapper: Vec< Box< ICamera > >,
-    _delta: f32, //test parameter for object velocity
+    _lights: Vec< light::LightAdsPoint >,
+    _camera: camera::Cam,
+    _delta: f32,
     _path_shader_vs: String,
     _path_shader_fs: String,
     _state: GameState,
+    _uicam: UiCam,
+    _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot ),
+    _md5_precompute: Rc< Vec< md5comp::ComputeCollection > >,
 }
 
 impl IGameLogic for GameLogic {
@@ -268,15 +273,81 @@ impl IGameLogic for GameLogic {
     type RenderObj = RenderObj;
 
     fn new() -> GameLogic {
+
+        //load sample md5 model from file
+        let file_mesh = md5common::file_open( "core/asset/md5/qshambler.md5mesh" ).expect("md5mesh file open invalid");
+        let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack01.md5anim" ).expect("md5anim file open invalid");
+        let mesh = match md5mesh::parse( &file_mesh ) {
+            Ok( o ) => o,
+            Err( e ) => panic!( e ),
+        };
+        let anim = match md5anim::parse( &file_anim ) {
+            Ok( o ) => o,
+            Err( e ) => panic!( e ),
+        };
+        let posecollection = match md5rig::process( & anim ) {
+            Ok( o ) => o,
+            Err( e ) => panic!( e ),
+        };
+        assert!( 5 < posecollection._frames.len() );
+
+        //prcompute animations
+        let mut animation = vec![];
+
+        let mut bbox_lower = [ 0.; 3 ];
+        let mut bbox_upper = [ 0.; 3 ];
+
+        info!( "bbox_lower: {:?}", bbox_lower );
+        info!( "bbox_upper: {:?}", bbox_upper );
+        
+        for frame in 0..posecollection._frames.len() - 1 {
+            for j in 0..2 {
+                match md5comp::process( & posecollection, & mesh, frame as u64, frame as u64 + 1, 0.5 * j as f32 ){
+                    Ok( o ) => {
+                        for h in 0..3 {
+                            if o._bbox_upper[h] > bbox_upper[h]{
+                               bbox_upper[h] = o._bbox_upper[h];
+                            } else if o._bbox_lower[h] < bbox_lower[h]{
+                                bbox_lower[h] = o._bbox_lower[h];
+                            }
+                        }
+                        animation.push( o );
+                    },
+                    Err( e ) => panic!( e ),
+                }
+            }
+        }
+
+        //camera
+        let fov = 114f32;
+        let aspect = 1f32;
+        let near = 0.001f32;
+        let far = 1000f32;
+        let cam_foc_pos = mat::Mat3x1 { _val: [ (bbox_upper[0] + bbox_lower[0])/2.,
+                                                (bbox_upper[1] + bbox_lower[1])/2.,
+                                                (bbox_upper[2] + bbox_lower[2])/2., ] };
+        let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
+        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 25.,
+                                            bbox_upper[1] + 25.,
+                                            bbox_upper[2] + 25.] };
+        let cam_id = 0;
+        let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
+
         let mut ret = GameLogic {
+
             _is_init: false,
             _lights: vec![],
-            _cameras: vec![],
-            // _cameras_wrapper: vec![],
+            _camera: cam,
             _delta: 0f32,
             _path_shader_vs: String::new(),
             _path_shader_fs: String::new(),
             _state: Default::default(),
+            _uicam: UiCam {
+                _trackball: TrackBall::new(500.,500.),
+                .. Default::default()
+            },
+            _md5: ( posecollection , mesh ),
+            _md5_precompute: Rc::new( animation ),
         };
         
         //lights
@@ -298,18 +369,6 @@ impl IGameLogic for GameLogic {
             ret._lights.push( l );
         }
 
-        //camera
-        let fov = 120f32;
-        let aspect = 1f32;
-        let near = 0.001f32;
-        let far = 1000f32;
-        let cam_foc_pos = mat::Mat3x1 { _val: [0f32, 0f32, 5f32] };
-        let cam_up = mat::Mat3x1 { _val: [0f32, 1f32, 0f32] };
-        let cam_pos = mat::Mat3x1 { _val: [5f32, 5f32, 20f32] };
-        let cam_id = 0;
-        let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
-        ret._cameras.push( cam );
-
         ret
     }
 
@@ -330,8 +389,9 @@ impl IGameLogic for GameLogic {
                     self._state._exit = true;
                 },
                 _ => {},
-            }
-        }
+            };
+            self._uicam.process( i );
+        }        
 
         self.set_continue_compute( true );
 
@@ -371,26 +431,55 @@ impl IGameLogic for GameLogic {
 
         //todo: use game specific game logic to produce render objects instead
 
-        // {
-        //     let test_impl = self.get_game_impl();
-        // }
-        
         let mut v = vec![];
 
         if !self._state._is_init_run_first_time {
             //does this once to setup some shaders
             self._state._is_init_run_first_time = true;
             let initial_render = RenderObj::InitialRender { _path_shader_fs: self._path_shader_fs.clone(),
-                                                            _path_shader_vs: self._path_shader_vs.clone() };
+                                                             _path_shader_vs: self._path_shader_vs.clone() };
             v.push( initial_render );
         }
 
+        
+        //update camera
+        
+        let focus = self._camera._focus.clone();
+        let mut pos = self._camera._pos_orig;
+        self._camera._pos_orig = pos;
+
+        let axis_front = focus.minus( & pos ).unwrap().normalize().unwrap();
+        let axis_right = axis_front.cross( & self._camera._up ).unwrap().normalize().unwrap();
+
+        let move_front = axis_front.scale( self._uicam._move.0 as f32 * 0.3 ).unwrap();
+        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.75 ).unwrap();
+        let move_up = self._camera._up.normalize().unwrap().scale( self._uicam._move.2 as f32 * 0.3 ).unwrap();
+        
+        pos = pos.plus( & move_front.plus( & move_right ).unwrap().plus( & move_up ).unwrap() ).unwrap();
+        self._uicam._move = ( 0, 0, 0 );
+
+        let rot_matrix = self._uicam._trackball.get_rot().to_rotation_matrix( true );
+        self._uicam._trackball.reset_rot();
+        let offset = mat::Mat4x1 { _val: [ pos[0] - focus[0],
+                                           pos[1] - focus[1],
+                                           pos[2] - focus[2],
+                                           0. ] };
+        
+        let pos_update = rot_matrix.mul_mat4x1( & offset ).unwrap();
+
+        let pos_new = focus.plus( & mat::Mat3x1 { _val: [ pos_update[0], pos_update[1], pos_update[2] ] } ).unwrap();
+        self._camera.update_pos( pos_new, focus );
+
+        self._camera._pos_orig = pos_new;
+
         //dummy geometry to render
         v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
-                                          _light: self._lights[0].clone(),
-                                          _camera: self._cameras[0].clone() } );
+                                           _light: self._lights[0].clone(),
+                                           _camera: self._camera.clone(),
+                                           _md5_precompute: self._md5_precompute.clone(),
+        } );
         
-        self._state._time_game -= 0.01;
+        self._state._time_game += 1.;
 
         v
     }
@@ -402,8 +491,17 @@ impl IGameLogic for GameLogic {
     fn should_exit( & mut self ) -> bool {
         self._state._exit
     }
+}
 
-    // fn get_game_impl( & mut self ) -> & mut GameImpl {
-    //     & mut self._game_impl
-    // }
+#[main]
+fn main() {
+
+    env::set_var("LOG_SETTING", "info" );
+    
+    pretty_env_logger::init_custom_env( "LOG_SETTING" );
+    
+    let mut k : Kernel<GameLogic> = Kernel::new().unwrap();
+    
+    k.run().is_ok();
+    
 }

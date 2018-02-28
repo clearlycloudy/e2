@@ -1,14 +1,16 @@
+extern crate mazth;
+
 use std::collections::HashMap;
 
-use implement::math::mat;
+use self::mazth::mat::{ Mat4, Mat3x1 };
 use implement::render::renderdevice_gl::RenderUniformCollection;
 
 pub trait Xform {
-    fn get_xform() -> mat::Mat4< f32 >;
+    fn get_xform() -> Mat4< f32 >;
 }
 
 pub trait ObjPos {
-    fn get_pos( & self ) -> mat::Mat3x1< f32 >;
+    fn get_pos( & self ) -> Mat3x1< f32 >;
 }
 
 #[derive(Debug)]

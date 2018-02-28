@@ -1,9 +1,11 @@
-use interface::i_shape::{ ShapeType, IShape };
-use interface::i_bound::IBound;
-use interface::i_vicinity::IVicinity;
+extern crate mazth;
 
-use implement::math::mat::Mat3x1;
-use implement::math::bound::AxisAlignedBBox;
+use self::mazth::i_shape::{ ShapeType, IShape };
+use self::mazth::i_bound::IBound;
+use self::mazth::i_vicinity::IVicinity;
+
+use self::mazth::mat::Mat3x1;
+use self::mazth::bound::AxisAlignedBBox;
 
 #[derive(Debug, Clone)]
 pub struct Frustum {

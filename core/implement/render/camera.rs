@@ -1,4 +1,5 @@
 extern crate pretty_env_logger;
+extern crate mazth;
 
 use std::collections::HashMap;
 use std::vec::Vec;
@@ -8,6 +9,7 @@ use interface::i_renderobj;
 use interface::i_ele;
 use interface::i_component;
 
+use self::mazth::mat::*;
 use implement::math;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -27,9 +29,9 @@ pub enum PropVal {
     Aspect(f32),
     Near(f32),
     Far(f32),
-    Pos(math::mat::Mat3x1< f32 >),
-    Up(math::mat::Mat3x1< f32 >),
-    Focus(math::mat::Mat3x1< f32 >),
+    Pos(Mat3x1< f32 >),
+    Up(Mat3x1< f32 >),
+    Focus(Mat3x1< f32 >),
 }
 
 #[derive(Clone)]
@@ -37,22 +39,23 @@ pub struct Cam {
     /// # helper id for the camera
     pub _id: u64,
 
-    pub _proj_xform: math::mat::Mat4< f32 >,
+    pub _proj_xform: Mat4< f32 >,
     /// # The following generates the projection matrix
     pub _fov: f32,
     pub _aspect: f32,
     pub _near: f32,
     pub _far: f32,
 
-    pub _view_xform: math::mat::Mat4< f32 >,
+    pub _view_xform: Mat4< f32 >,
     /// # The following generates the view matrix
-    pub _pos: math::mat::Mat3x1< f32 >,
-    pub _up: math::mat::Mat3x1< f32 >,
-    pub _focus: math::mat::Mat3x1< f32 >,
+    pub _pos: Mat3x1< f32 >,
+    pub _pos_orig: Mat3x1< f32 >,
+    pub _up: Mat3x1< f32 >,
+    pub _focus: Mat3x1< f32 >,
 }
 
 impl Cam {
-    pub fn init( id: u64, fov: f32, aspect: f32, near: f32, far: f32, pos: math::mat::Mat3x1< f32 >, focus: math::mat::Mat3x1< f32 >, up: math::mat::Mat3x1< f32 > ) -> Cam {
+    pub fn init( id: u64, fov: f32, aspect: f32, near: f32, far: f32, pos: Mat3x1< f32 >, focus: Mat3x1< f32 >, up: Mat3x1< f32 > ) -> Cam {
         Cam {
             _id: id,
             _fov: fov,
@@ -60,12 +63,18 @@ impl Cam {
             _near: near,
             _far: far,
             _pos: pos,
+            _pos_orig: pos,
             _up: up,
             _focus: focus,
             _proj_xform: math::util::perspective( fov, aspect, near, far ),
             _view_xform: math::util::look_at( pos, focus, up ),
         }
-    }    
+    }
+    pub fn update_pos( & mut self, pos: Mat3x1< f32 >, focus: Mat3x1< f32 > ) {
+        self._pos = pos;
+        self._focus = focus;
+        self._view_xform = math::util::look_at( pos, self._focus, self._up );
+    }
 }
 
 impl i_ele::IObjImpl for Cam {
@@ -76,7 +85,7 @@ impl i_ele::IObjImpl for Cam {
 
         //store uniform data
         {
-            let model_transform = math::mat::Mat4::<f32> { _val: [ 1f32, 0f32, 0f32, 0f32,
+            let model_transform = Mat4::<f32> { _val: [ 1f32, 0f32, 0f32, 0f32,
                                                                    0f32, 1f32, 0f32, 0f32,
                                                                    0f32, 0f32, 1f32, 0f32,
                                                                    0f32, 0f32, 0f32, 1f32 ],
@@ -118,7 +127,7 @@ impl i_ele::IObjImpl for Cam {
 }
 
 impl i_renderobj::ObjPos for Cam {
-    fn get_pos( & self ) -> math::mat::Mat3x1< f32 > {
+    fn get_pos( & self ) -> Mat3x1< f32 > {
         self._pos
     }
 }

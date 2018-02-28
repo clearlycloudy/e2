@@ -1,3 +1,7 @@
+extern crate chrono;
+
+use self::chrono::prelude::*;
+
 use std::fmt::Debug;
 
 use interface::i_window::IWindow;
@@ -41,7 +45,11 @@ pub trait IKernel < W: IWindow,
         #[allow(unused_mut)]
         let mut sigs_for_window = vec![];
 
+        let mut t_cycle_last = Local::now();
+
         while running {
+
+            let t0 = Local::now();
 
             //process windowing events into buffer
             (self.as_mut() as & W).make_current()?;
@@ -59,16 +67,34 @@ pub trait IKernel < W: IWindow,
             }
 
             let events_inputs_filtered = (self.as_mut() as & mut I).process_input_events( events_window.as_slice() );
+
+            let t1 = Local::now();
             
             let ( events_render, signal_exit ) : ( Vec<  _ >, bool ) = (self.as_mut() as & mut G).process_input_events( events_inputs_filtered.as_slice() );
 
             if signal_exit {
                 running = false;
             }
+
+            let t2 = Local::now();
             
-            (self.as_mut() as & mut R).process_render_events( events_render.as_slice() ).is_ok();
+            (self.as_mut() as & mut R).process_render_events( events_render ).is_ok();
 
             (self.as_mut() as & mut W).swap_buf();
+
+            let t3 = Local::now();
+
+            let t_1_0 = t1.signed_duration_since(t0).num_microseconds().unwrap() as f64;
+            let t_2_1 = t2.signed_duration_since(t1).num_microseconds().unwrap() as f64;
+            let t_3_2 = t3.signed_duration_since(t2).num_microseconds().unwrap() as f64;
+            let t_cycle = t0.signed_duration_since(t_cycle_last).num_microseconds().unwrap() as f64;
+            t_cycle_last = t0;
+            debug!( "t lapse ui input filter: {} ms", t_1_0 / 1000. );
+            debug!( "t lapse game logic: {} ms", t_2_1 / 1000. );
+            debug!( "t lapse renderer: {} ms", t_3_2 / 1000. );
+            if t_cycle > 0. {
+                info!( "frame rate: {} Hz", 1_000_000. / t_cycle );
+            }
         }
         
         info!( "kernel shutdown." );

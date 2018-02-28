@@ -1,10 +1,12 @@
+extern crate mazth;
+
 use std::str;
 use std::clone::Clone;
 
-use implement::math::quat::Quat;
+use self::mazth::quat::Quat;
 use implement::file::md5anim;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RigJoint {
     pub _name: String,
     pub _parent: i64,
@@ -12,14 +14,14 @@ pub struct RigJoint {
     pub _orient: Quat<f32>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PoseJoints {
     pub _joints: Vec< RigJoint >,
     // pub _bbox_lower: [f32;3], //todo
     // pub _bbox_upper: [f32;3],
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PoseCollection {
     pub _frames: Vec< PoseJoints >,
     pub _framerate: u64,
@@ -76,16 +78,18 @@ fn process_posejoints( f: & md5anim::Frame, _bbox: & md5anim::Bound, hier: & Vec
             assert!( parent_joint_index < pj._joints.len() as i64 ); //the referenced parent joint is required to be alrady processed
             let parent_joint_frame = & pj._joints[ parent_joint_index as usize ];
             //update position and rotation
-            let pos_quat = Quat::<f32>::init_from_vals( bf_pos[0], bf_pos[1], bf_pos[2], 0f32 );
+            let pos_quat = Quat::<f32>::init_from_vals_raw( bf_pos[0], bf_pos[1], bf_pos[2], 0. );
             let orient_inv = parent_joint_frame._orient.inverse().normalize();
+
             let res = parent_joint_frame._orient.mul( pos_quat ).mul( orient_inv );
+            
             RigJoint {
                 _name: hier[i]._name.clone(),
                 _parent: hier[i]._parent,
                 _pos: [ parent_joint_frame._pos[0] + res._x,
                         parent_joint_frame._pos[1] + res._y,
                         parent_joint_frame._pos[2] + res._z, ],
-                _orient: parent_joint_frame._orient.mul( bf_orient ),
+                _orient: parent_joint_frame._orient.mul( bf_orient ).normalize(),
             }
         }else{ //root joint
             RigJoint {

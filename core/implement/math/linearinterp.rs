@@ -1,6 +1,8 @@
+extern crate mazth;
+
 use std::cmp;
 
-use implement::math::mat::*;
+use self::mazth::mat::*;
 use interface::i_interpolate::*;
 
 #[derive(Debug)]

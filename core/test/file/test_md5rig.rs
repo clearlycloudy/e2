@@ -16,5 +16,12 @@ fn test_parse_md5rig(){
     };
     assert!( rig._frames.len() as u64 == anim._numframes );
     assert!( rig._framerate as u64 == anim._framerate );
-    // println!( "rig frames: {:?}", rig._frames );
+    // println!("rig frames: ");
+    
+    // for (k,i) in rig._frames.iter().enumerate() {
+    //     println!( "frame: {}", k );
+    //     for j in i._joints.iter() {
+    //         println!( "{:?}", j );
+    //     }
+    // }
 }

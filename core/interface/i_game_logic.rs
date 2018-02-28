@@ -7,13 +7,15 @@ use interface::i_scheduler::IScheduler;
 pub trait IGameLogic
 {
     type EventInput : Debug;
-    type EventRender : From< Self::RenderObj >;
+    type EventRender;
     type GameState : Default + Clone + From< (Self::GameState, Self::GameStateChangeApply) >;
     type GameStateChangePending : Default + Clone;
     type GameStateChangeApply : Default + Clone + From< Self::ComputeUnit >;
     type ComputeUnit;
     type ComputeSchedule : IScheduler< Item = Self::ComputeUnit > + Iterator<Item = Vec<Self::ComputeUnit> >;
-    type RenderObj;
+
+    /// transform a high level renderobj representation into render commands / elements
+    type RenderObj : Into< Vec< Self::EventRender > >;
     
     fn new() -> Self;
     
@@ -29,6 +31,8 @@ pub trait IGameLogic
     ///compute constraints per cycle
     fn continue_compute( & mut self ) -> bool;
 
+    fn set_continue_compute( & mut self, bool );
+
     ///get what to compute based on changed game state
     fn get_computations( & mut self, changed_game_state: & Self::GameStateChangePending ) -> Vec< Self::ComputeUnit >;
 
@@ -42,7 +46,9 @@ pub trait IGameLogic
     fn filter_renderables( & mut self, r: Vec< Self::RenderObj > ) -> Vec< Self::RenderObj >;
 
     fn should_exit( & mut self ) -> bool;
-    
+
+    // fn get_game_impl( & mut self ) -> & mut Self::GameImpl;
+
     ///default implementation
     fn process_input_events( & mut self, e: & [ Self::EventInput ] ) -> ( Vec< Self::EventRender >, bool ) {
 
@@ -53,10 +59,17 @@ pub trait IGameLogic
         
         //get changed states pending for computations
         let changed_states_pending = self.transition_states( e );
-        
-        //perform computations
-        while self.continue_compute() {
 
+        let mut count_compute_cycle = 0;
+
+        //perform computations via:
+        //pending_changed_state -> computes -> compute schedule -> execute computes -> 
+        //finished_compute -> apply to new state
+
+        while self.continue_compute() { //compute flag accessed in game state by game logic
+
+            count_compute_cycle += 1;
+            
             //todo: transform changed game states to determine what to compute/update
             let computes = self.get_computations( & changed_states_pending );
 
@@ -64,11 +77,11 @@ pub trait IGameLogic
             //with no dependencies across different series of iterator in the vector
             let scheduler = Self::ComputeSchedule::new( computes.as_slice() );
 
-            for i in scheduler { //consume and fork work possible into parallel threads
+            for i in scheduler { //todo: offload work to parallel threads
                 i.into_iter()
                     //execute computation unit and map it back to a state change
                     .map( |compute_unit| Self::GameStateChangeApply::from(compute_unit) )
-                    //apply the change back to the game state
+                    //apply the change back to the game state, possibly use fold instead
                     .for_each( |changes| {
                         //apply result of compute unit changes back into game state
                         //todo: optimize this
@@ -77,6 +90,8 @@ pub trait IGameLogic
                         *self.get_states_mut() = game_state_new;
                     });
             }
+
+            trace!( "compute cycle(s): {}", count_compute_cycle );
         }
 
         //transform renderable objects to render events
@@ -88,7 +103,8 @@ pub trait IGameLogic
         //do further render commands packaging here
         let render_events = render_objects_filtered
             .into_iter()
-            .map( |x| Self::EventRender::from( x ) )
+            //transformation of high level game object into render elements / commands
+            .flat_map( |x| Self::RenderObj::into( x ) )
             .collect();
         
         let sig_exit = self.should_exit();

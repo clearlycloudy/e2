@@ -1,3 +1,5 @@
+extern crate mazth;
+
 #[cfg(test)]
 #[allow(unused_imports)]
 use std::ops::Div;
@@ -5,7 +7,7 @@ use std::ops::Div;
 use std::cmp::Ordering;
 
 #[allow(unused_imports)]
-use implement::math::mat::Mat4x1;
+use self::mazth::mat::Mat4x1;
 #[allow(unused_imports)]
 use interface::i_interpolate::IInterpolate;
 

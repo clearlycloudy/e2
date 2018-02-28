@@ -10,13 +10,15 @@ matrix utilities
 
 render backend using OpenGL
 
+md5mesh & md5anim file format import
+
 # Todos:
 
 Refactoring major components for engine to be localized
 
 Create camera utilities and trajectory controllers
 
-Hook up a number of low level blocks into the kernel: model parsers ( .obj, md5anim, md5mesh ), spatial accelerators( bvh, gjk )
+Hook up a number of low level blocks into the kernel: model parsers ( .obj ), spatial accelerators( bvh, gjk )
 
 Create model asset and texture managers
 
@@ -25,3 +27,8 @@ Add better debugging and console input facilities
 Implement multithreading support for front end and some of the back end pipelines
 
 Do feasibility study of using physically based rendering approach as an alternative rendering pipeline
+
+# Screenshots:
+
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/pDVDkFX23Tc/0.jpg)](https://youtu.be/pDVDkFX23Tc "md5mesh & md5anim")
+

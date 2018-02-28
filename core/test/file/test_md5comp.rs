@@ -27,25 +27,26 @@ fn test_parse_md5comp(){
             Ok( o ) => o,
             Err( e ) => panic!( e ),
         };
-        println!( "number of meshes: {:?}", _comp._meshcomputes.len() );
+        // println!( "number of meshes: {:?}", _comp._meshcomputes.len() );
 
-        let mut pos = vec![];
-        let mut nor = vec![];
-        for i in _comp._meshcomputes.iter() {
-            for j in i._tris.iter() {
-                for k in 0..3 {
-                    let idx_vert = j._vert_indices[ k ];
-                    let vert = & i._verts[ idx_vert as usize ];
-                    pos.push( vert._pos );
-                    nor.push( vert._normal );
-                }
-            }
-        }
+        // let mut pos = vec![];
+        // let mut nor = vec![];
+        // for i in _comp._meshcomputes.iter() {
+        //     for j in i._tris.iter() {
+        //         for k in 0..3 {
+        //             let idx_vert = j._vert_indices[ k ];
+        //             let vert = & i._verts[ idx_vert as usize ];
+        //             pos.push( vert._pos );
+        //             nor.push( vert._normal );
+        //         }
+        //     }
+        // }
+
+        assert_eq!( _comp._batch_vert.len(), _comp._batch_normal.len() );
+        assert_eq!( _comp._batch_vert.len() / 3, _comp._batch_tc.len() / 2 );
+        
         println!( "min bbox pos: {:?}", _comp._bbox_lower );
         println!( "max bbox pos: {:?}", _comp._bbox_upper );
-        
-        assert!( pos.len() % 3 == 0 );
-        assert!( nor.len() % 3 == 0 );
 
         // for i in &pos {
         //     println!( "pos: {:?}", i );

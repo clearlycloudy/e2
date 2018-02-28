@@ -249,15 +249,23 @@ impl Renderer {
     }
     #[allow(unused)]
     pub fn add_obj( & mut self, name: &str, e: i_ele::Ele ) -> Result< ( usize ), & 'static str > {
-
+        
         let index = self._objs.len();
         self._objs.push( e );
 
+        let t0 = Local::now();
+        
         //load component data
         match self._objs[index].update_components_from_impl() {
             Err( e ) => { return Err( e ) },
             _ => (),
         }
+
+        let t1 = Local::now();
+
+        let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
+
+        info!( "t_update_components_from_impl: {} ms", t_delta );
 
         //detect command to flush and process all data in buffer
         let mut trigger_to_process_objs = false;
@@ -275,9 +283,18 @@ impl Renderer {
                 None => {},
             }
         }
-
+        
         if trigger_to_process_objs {
-            Renderer::process_objs( self, group_id )?
+
+            let t2 = Local::now();
+            
+            Renderer::process_objs( self, group_id )?;
+
+            let t3 = Local::now();
+
+            let t_delta = t3.signed_duration_since(t2).num_milliseconds() as f64;
+
+            info!( "t_process_objs flush: {} ms", t_delta );
         }
 
         Ok( self._objs.len() )

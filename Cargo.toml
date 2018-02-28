@@ -1,12 +1,12 @@
 [package]
 name = "e2r"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["YL <yuan6liu@gmail.com>"]
 description = "experimental rendering engine in rust"
 repository = "https://github.com/clearlycloudy/e2r/"
 keywords = [ "rendering", "graphics", "engine", "3D", "physics" ]
 license = "BSD-2-Clause"
-documentation = "https://docs.rs/e2r/0.8.0/e2rcore/"
+documentation = "https://docs.rs/e2r/0.9.0/e2rcore/"
 readme = "README.md"
 exclude = [
 "core/asset/images/*",
@@ -37,9 +37,10 @@ chrono = "0.4.0"
 name = "e2r_example_kernel_impl001"
 path = "core/example/example_kernel_impl001.rs"
 
-# [[bin]]
-# name = "n_of_a_kind"
-# path = "games/n_of_a_kind/mod.rs"
+#work in progress
+[[bin]]
+name = "n_of_a_kind"
+path = "games/n_of_a_kind/mod.rs"
 
 [[bin]]
 name = "model_viewer"

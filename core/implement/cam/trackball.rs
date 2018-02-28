@@ -80,8 +80,8 @@ impl TrackBall {
 
         let mut p : Mat3x1<f32> = Default::default();
         let r = self._w.min( self._h ) * 1.5; //radius of the trackball
-        p[0] = ( pos[0] - self._w / 2. ) / r; //normalize, x-direction
-        p[2] = ( pos[1] - self._h / 2. ) / r; //normalize, z-direction, assumed same as camera up-vector
+        p[0] = ( pos[0] - self._w / 1. ) / r; //normalize, x-direction
+        p[2] = ( pos[1] - self._h / 1. ) / r; //normalize, z-direction, assumed same as camera up-vector
         let mut d = p.magnitude().unwrap();
         if d > 1. {
             p[0] = p[0] / d;

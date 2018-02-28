@@ -1,6 +1,7 @@
 extern crate mazth;
 
 use std::str;
+use std::f32;
 
 use self::mazth::{ mat::Mat3x1, quat::Quat };
 use implement::file::md5rig;
@@ -22,9 +23,13 @@ pub struct MeshCompute {
 
 #[derive(Debug, Clone)]
 pub struct ComputeCollection {
-    pub _meshcomputes: Vec< MeshCompute >,
+    // pub _meshcomputes: Vec< MeshCompute >, //use batch instead
     pub _bbox_lower: [f32;3],
     pub _bbox_upper: [f32;3],
+
+    pub _batch_vert: Vec< f32 >,
+    pub _batch_normal: Vec< f32 >,
+    pub _batch_tc: Vec< f32 >,
 }
 
 pub fn process( pc: & md5rig::PoseCollection, m: & md5mesh::Md5MeshRoot, pose_index_start: u64, pose_index_end: u64, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
@@ -48,11 +53,17 @@ pub fn process( pc: & md5rig::PoseCollection, m: & md5mesh::Md5MeshRoot, pose_in
 
 pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints, pose_end: & md5rig::PoseJoints, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
     let mut cc = ComputeCollection {
-        _meshcomputes: vec![],
+        // _meshcomputes: vec![],
         _bbox_lower: [0f32;3],
         _bbox_upper: [0f32;3],
+        _batch_vert: vec![],
+        _batch_normal: vec![],
+        _batch_tc: vec![],
     };
 
+    let mut max_pos = [0., 0., 0.];
+    let mut min_pos = [0., 0., 0.];
+    
     for i in &m._meshes {
         let mut mc = MeshCompute {
             _verts: vec![],
@@ -86,6 +97,15 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
                 vc._pos[1] += ( pose_start_rigjoint._pos[1] + pos_transform._y ) * w._weight_bias;
                 vc._pos[2] += ( pose_start_rigjoint._pos[2] + pos_transform._z ) * w._weight_bias;
             }
+
+            for h in 0..3 {
+                if vc._pos[h] > max_pos[h] {
+                    max_pos[h] = vc._pos[h];
+                } else if vc._pos[h] < min_pos[h] {
+                    min_pos[h] = vc._pos[h];
+                }
+            }
+            
             mc._verts.push( vc );
         }
         //calculate vertex normal via cross product
@@ -115,46 +135,27 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             let v02 = v2.minus( &v0 ).unwrap();
             let n = v02.cross( &v01 ).expect("cross product for vertex normal invalid")
                 .normalize().expect("normalize for vertex normal invalid");
+
+            //don't need to save these
+            // for k in 0..3 {
+            //     mc._verts[ v0_index as usize ]._normal[ k ] = n._val[ k ];
+            //     mc._verts[ v1_index as usize ]._normal[ k ] = n._val[ k ];
+            //     mc._verts[ v2_index as usize ]._normal[ k ] = n._val[ k ];
+            // }
             
-            for k in 0..3 {
-                mc._verts[ v0_index as usize ]._normal[ k ] = n._val[ k ];
-                mc._verts[ v1_index as usize ]._normal[ k ] = n._val[ k ];
-                mc._verts[ v2_index as usize ]._normal[ k ] = n._val[ k ];
-            }
+            cc._batch_vert.extend_from_slice( &v0._val[..] );
+            cc._batch_vert.extend_from_slice( &v1._val[..] );
+            cc._batch_vert.extend_from_slice( &v2._val[..] );
+            let ns = n._val.into_iter().cycle().cloned().take(9).collect::<Vec<f32>>();
+            cc._batch_normal.extend_from_slice( &ns[..] );
+            cc._batch_tc.extend_from_slice( &[0., 0., 0., 0., 0., 0.] );
+            
         }
-        mc._tris.extend_from_slice( &i._tris[..] );
-        cc._meshcomputes.push( mc );
-        // for h in 0..3 {
-        //     cc._bbox_lower[h] = pose_start._bbox_lower[h];
-        //     cc._bbox_upper[h] = pose_start._bbox_upper[h];
-        // }
+        //don't need to save these
+        // mc._tris.extend_from_slice( &i._tris[..] );
+        // cc._meshcomputes.push( mc );
     }
-
-    let mut max_pos = [0., 0., 0.];
-    let mut min_pos = [0., 0., 0.];
-
-    // for i in cc._meshcomputes.iter() {
-    //     for j in i._verts.iter_mut() {
-    //         j = j._normal.normalize().expect( "normalization unsuccessful." );
-    //     }
-    // }
     
-    for i in cc._meshcomputes.iter() {
-        for j in i._tris.iter() {
-            for k in 0..3 {
-                let idx_vert = j._vert_indices[ k ];
-                let vert = & i._verts[ idx_vert as usize ];
-                for h in 0..3 {
-                    if max_pos[h] < vert._pos[h] {
-                        max_pos[h] = vert._pos[h];
-                    }
-                    if min_pos[h] > vert._pos[h] {
-                        min_pos[h] = vert._pos[h];
-                    }
-                }
-            }
-        }
-    }
     cc._bbox_lower = min_pos;
     cc._bbox_upper = max_pos;
     Ok( cc )

@@ -5,6 +5,9 @@ extern crate rand;
 extern crate mazth;
 extern crate e2rcore;
 extern crate pretty_env_logger;
+extern crate chrono;
+
+use self::chrono::prelude::*;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -219,35 +222,30 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                 
                 let ( posecollection, md5mesh ) = _md5;
 
+                let t0 = Local::now();
+
                 let frame = ( _time_game as usize % (posecollection._frames.len()-1) ) as u64;
                 let md5_interp = match md5comp::process( & posecollection, & md5mesh, frame, frame+1, 0.5f32 ){
                     Ok( o ) => o,
                     Err( e ) => panic!( e ),
                 };
 
-                for i in md5_interp._meshcomputes.iter() {
-                    for j in i._tris.iter() {
-                        for k in 0..3 {
-                            let idx_vert = j._vert_indices[ k ];
-                            let vert = & i._verts[ idx_vert as usize ];
-                            
-                            mesh._pos.push( mat::Mat3x1 { _val: [ vert._pos[0],
-                                                                  vert._pos[1],
-                                                                  vert._pos[2] ] } );
-
-                            mesh._normal.push( mat::Mat3x1 { _val: [ vert._normal[0],
-                                                                     vert._normal[1],
-                                                                     vert._normal[2] ] } );
-
-                            mesh._tc.push( mat::Mat2x1 { _val: [ 0f32, 0f32 ] } );
-                        }
-                    }
+                let t1 = Local::now();
+                {
+                    let t_delta = t1.signed_duration_since(t0).num_microseconds().unwrap() as f64;
+                    info!( "t_md5comp: {} ms", t_delta / 1000. );
                 }
-                assert!( mesh._pos.len() % 3 == 0 );
-                assert!( mesh._normal.len() == mesh._pos.len() );
+                
+                mesh._batch_pos = md5_interp._batch_vert;
+                mesh._batch_normal = md5_interp._batch_normal;
+                mesh._batch_tc = md5_interp._batch_tc;
+                
+                assert!( mesh._batch_pos.len() % 3 == 0 );
+                assert!( mesh._batch_pos.len() == mesh._batch_normal.len() );
+                assert!( mesh._batch_tc.len() / 2 == mesh._batch_pos.len() / 3 );
+
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
                 
-
                 // let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
                 //                                    _scale: mat::Mat3x1 { _val: [ 1., 1., 0.001 ] },
                 //                                    _radius: 5f32 };

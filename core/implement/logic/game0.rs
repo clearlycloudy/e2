@@ -189,37 +189,38 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                 //create some meshes for test:
                 //set triangle vert positions and normals
                 let mut mesh = mesh::Mesh::init( 0 );
-                mesh._pos.extend_from_slice( &[ mat::Mat3x1 { _val: [-1f32, -1f32, -1f32 ] },
-                                                mat::Mat3x1 { _val: [ 5f32, -1f32, -1f32 ] },
-                                                mat::Mat3x1 { _val: [-1f32,  1f32, -1f32 ] },
-                                                mat::Mat3x1 { _val: [ 4f32, -1f32, 15f32 ] },
-                                                mat::Mat3x1 { _val: [ 6f32, -1f32, 15f32 ] },
-                                                mat::Mat3x1 { _val: [ 4f32,  1f32, 15f32 ] }, ] );
+                mesh._batch_pos.extend_from_slice( &[ -1f32, -1f32, -1f32,
+                                                       5f32, -1f32, -1f32,
+                                                      -1f32,  1f32, -1f32,
+                                                       4f32, -1f32, 15f32,
+                                                       6f32, -1f32, 15f32,
+                                                       4f32,  1f32, 15f32, ] );
 
-                mesh._normal.extend_from_slice( &[ mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] },
-                                                   mat::Mat3x1 { _val: [ 0f32, 0f32, 1f32 ] }, ] );
+                mesh._batch_normal.extend_from_slice( &[ 0f32, 0f32, 1f32,
+                                                         0f32, 0f32, 1f32,
+                                                         0f32, 0f32, 1f32,
+                                                         0f32, 0f32, 1f32,
+                                                         0f32, 0f32, 1f32,
+                                                         0f32, 0f32, 1f32, ] );
                 
-                mesh._tc.extend_from_slice( &[ mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] },
-                                               mat::Mat2x1 { _val: [ 0f32, 0f32 ] }, ] );
+                mesh._batch_tc.extend_from_slice( &[ 0f32, 0f32,
+                                                     0f32, 0f32,
+                                                     0f32, 0f32,
+                                                     0f32, 0f32,
+                                                     0f32, 0f32,
+                                                     0f32, 0f32, ] );
 
                 let mesh_copy = mesh.clone();
 
                 let mut mesh2 = mesh_copy.clone();
-                mesh2._pos.clear();
-                mesh2._pos.extend_from_slice( &[ mat::Mat3x1 { _val: [-1f32+ _time_game, -1f32, -1f32 ] },
-                                                 mat::Mat3x1 { _val: [ 5f32+_time_game, -1f32, -1f32 ] },
-                                                 mat::Mat3x1 { _val: [-1f32+_time_game,  1f32, -1f32 ] },
-                                                 mat::Mat3x1 { _val: [ 4f32+_time_game, -1f32, 15f32 ] },
-                                                 mat::Mat3x1 { _val: [ 6f32+_time_game, -1f32, 15f32 ] },
-                                                 mat::Mat3x1 { _val: [ 4f32+_time_game,  1f32, 15f32 ] }, ] );
+                mesh2._batch_pos.clear();
+                mesh2._batch_pos.extend_from_slice( &[ -1f32+ _time_game, -1f32, -1f32,
+                                                        5f32+_time_game, -1f32, -1f32,
+                                                        -1f32+_time_game,  1f32, -1f32,
+                                                        4f32+_time_game, -1f32, 15f32,
+                                                        6f32+_time_game, -1f32, 15f32,
+                                                        4f32+_time_game,  1f32, 15f32, ] );
+
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh2 ) ) );
 
                 let prim_box = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ -5f32, -10f32, 5f32 ] },

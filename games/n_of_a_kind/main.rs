@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 ///sample implementation of game logic
 
 extern crate image;
@@ -13,7 +15,7 @@ use std::path::Path;
 
 use self::e2rcore::interface::i_ele;
 use self::e2rcore::interface::i_game_logic::IGameLogic;
-use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode, State, Coord };
+use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode, /*State, Coord*/ };
 // use interface::i_camera::ICamera;
 use self::e2rcore::interface::i_scheduler::IScheduler;
 
@@ -22,7 +24,7 @@ use self::e2rcore::implement::render::util_gl;
 use self::e2rcore::implement::render::texture;
 use self::e2rcore::implement::render::camera;
 use self::e2rcore::implement::render::light;
-use self::e2rcore::implement::render::mesh;
+// use self::e2rcore::implement::render::mesh;
 use self::e2rcore::implement::render::primitive;
 
 use self::e2rcore::implement::ui::ui_cam::UiCam;
@@ -281,6 +283,7 @@ pub struct GameLogic {
     _uicam: UiCam,
 }
 
+//todo
 impl IGameLogic for GameLogic {
 
     type EventInput = InputFiltered;
@@ -418,7 +421,7 @@ impl IGameLogic for GameLogic {
         
         //update camera
         
-        let mut focus = self._cameras[0]._focus.clone();
+        let focus = self._cameras[0]._focus.clone();
         let mut pos = self._cameras[0]._pos_orig;
         self._cameras[0]._pos_orig = pos;
 
@@ -677,6 +680,6 @@ fn main() {
     
     let mut k : Kernel<GameLogic> = Kernel::new().unwrap();
     
-    k.run();
+    k.run().is_ok();
     
 }

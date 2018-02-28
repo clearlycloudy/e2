@@ -5,9 +5,9 @@ extern crate rand;
 extern crate mazth;
 extern crate e2rcore;
 extern crate pretty_env_logger;
-extern crate chrono;
+// extern crate chrono;
 
-use self::chrono::prelude::*;
+// use self::chrono::prelude::*;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -17,7 +17,7 @@ use std::rc::Rc;
 
 use self::e2rcore::interface::i_ele;
 use self::e2rcore::interface::i_game_logic::IGameLogic;
-use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode, State, Coord };
+use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode, /*State, Coord*/ };
 use self::e2rcore::interface::i_scheduler::IScheduler;
 
 use self::e2rcore::implement::render::renderer_gl;
@@ -26,7 +26,7 @@ use self::e2rcore::implement::render::texture;
 use self::e2rcore::implement::render::camera;
 use self::e2rcore::implement::render::light;
 use self::e2rcore::implement::render::mesh;
-use self::e2rcore::implement::render::primitive;
+// use self::e2rcore::implement::render::primitive;
 
 use self::e2rcore::implement::ui::ui_cam::UiCam;
 
@@ -37,11 +37,11 @@ use self::mazth::mat;
 use self::rand::Rng;
 use self::image::GenericImage;
 
-use self::rand::distributions::{IndependentSample, Range};
+// use self::rand::distributions::{IndependentSample, Range};
 
 use std::env;
 
-use std::collections::{ HashSet, HashMap };
+// use std::collections::{ HashSet, HashMap };
 
 use self::e2rcore::interface::i_kernel::IKernel;
 
@@ -177,8 +177,7 @@ pub enum RenderObj {
         _time_game: f32,
         _light: light::LightAdsPoint,
         _camera: camera::Cam,
-        // _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot),
-        _md5: ( Rc<md5rig::PoseCollection>, Rc<md5mesh::Md5MeshRoot> ),
+        _md5_precompute: Rc< Vec<md5comp::ComputeCollection> >,
     },
 }
 
@@ -214,31 +213,17 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
 
                 render_events
             },
-            RenderObj::TestGeometry{ _time_game, _light, _camera, _md5 } =>{
+            RenderObj::TestGeometry{ _time_game, _light, _camera, _md5_precompute } =>{
+
                 let mut render_events = vec![];
-
-                //set triangle vert positions and normals
+                
                 let mut mesh = mesh::Mesh::init( 0 );
-                
-                let ( posecollection, md5mesh ) = _md5;
 
-                let t0 = Local::now();
+                let frame = _time_game as usize % _md5_precompute.len();
 
-                let frame = ( _time_game as usize % (posecollection._frames.len()-1) ) as u64;
-                let md5_interp = match md5comp::process( & posecollection, & md5mesh, frame, frame+1, 0.5f32 ){
-                    Ok( o ) => o,
-                    Err( e ) => panic!( e ),
-                };
-
-                let t1 = Local::now();
-                {
-                    let t_delta = t1.signed_duration_since(t0).num_microseconds().unwrap() as f64;
-                    info!( "t_md5comp: {} ms", t_delta / 1000. );
-                }
-                
-                mesh._batch_pos = md5_interp._batch_vert;
-                mesh._batch_normal = md5_interp._batch_normal;
-                mesh._batch_tc = md5_interp._batch_tc;
+                mesh._batch_pos = _md5_precompute[frame]._batch_vert.clone();
+                mesh._batch_normal = _md5_precompute[frame]._batch_normal.clone();
+                mesh._batch_tc = _md5_precompute[frame]._batch_tc.clone();
                 
                 assert!( mesh._batch_pos.len() % 3 == 0 );
                 assert!( mesh._batch_pos.len() == mesh._batch_normal.len() );
@@ -272,7 +257,8 @@ pub struct GameLogic {
     _path_shader_fs: String,
     _state: GameState,
     _uicam: UiCam,
-    _md5: ( Rc< md5rig::PoseCollection >, Rc< md5mesh::Md5MeshRoot > ),
+    _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot ),
+    _md5_precompute: Rc< Vec< md5comp::ComputeCollection > >,
 }
 
 impl IGameLogic for GameLogic {
@@ -287,17 +273,6 @@ impl IGameLogic for GameLogic {
     type RenderObj = RenderObj;
 
     fn new() -> GameLogic {
-
-        //camera
-        let fov = 114f32;
-        let aspect = 1f32;
-        let near = 0.001f32;
-        let far = 1000f32;
-        let cam_foc_pos = mat::Mat3x1 { _val: [0f32, 0f32, 0f32] };
-        let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
-        let cam_pos = mat::Mat3x1 { _val: [75f32, 75f32, 150f32] };
-        let cam_id = 0;
-        let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
 
         //load sample md5 model from file
         let file_mesh = md5common::file_open( "core/asset/md5/qshambler.md5mesh" ).expect("md5mesh file open invalid");
@@ -315,12 +290,49 @@ impl IGameLogic for GameLogic {
             Err( e ) => panic!( e ),
         };
         assert!( 5 < posecollection._frames.len() );
-        // let _comp = match md5comp::process( & posecollection, & mesh, 0, 1, 0.5f32 ){
-        //     Ok( o ) => o,
-        //     Err( e ) => panic!( e ),
-        // };
-        // println!( "{:?}", comp );
+
+        //prcompute animations
+        let mut animation = vec![];
+
+        let mut bbox_lower = [ 0.; 3 ];
+        let mut bbox_upper = [ 0.; 3 ];
+
+        info!( "bbox_lower: {:?}", bbox_lower );
+        info!( "bbox_upper: {:?}", bbox_upper );
         
+        for frame in 0..posecollection._frames.len() - 1 {
+            for j in 0..2 {
+                match md5comp::process( & posecollection, & mesh, frame as u64, frame as u64 + 1, 0.5 * j as f32 ){
+                    Ok( o ) => {
+                        for h in 0..3 {
+                            if o._bbox_upper[h] > bbox_upper[h]{
+                               bbox_upper[h] = o._bbox_upper[h];
+                            } else if o._bbox_lower[h] < bbox_lower[h]{
+                                bbox_lower[h] = o._bbox_lower[h];
+                            }
+                        }
+                        animation.push( o );
+                    },
+                    Err( e ) => panic!( e ),
+                }
+            }
+        }
+
+        //camera
+        let fov = 114f32;
+        let aspect = 1f32;
+        let near = 0.001f32;
+        let far = 1000f32;
+        let cam_foc_pos = mat::Mat3x1 { _val: [ (bbox_upper[0] + bbox_lower[0])/2.,
+                                                (bbox_upper[1] + bbox_lower[1])/2.,
+                                                (bbox_upper[2] + bbox_lower[2])/2., ] };
+        let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
+        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 25.,
+                                            bbox_upper[1] + 25.,
+                                            bbox_upper[2] + 25.] };
+        let cam_id = 0;
+        let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
+
         let mut ret = GameLogic {
 
             _is_init: false,
@@ -334,7 +346,8 @@ impl IGameLogic for GameLogic {
                 _trackball: TrackBall::new(500.,500.),
                 .. Default::default()
             },
-            _md5: ( Rc::new( posecollection) , Rc::new( mesh ) ),
+            _md5: ( posecollection , mesh ),
+            _md5_precompute: Rc::new( animation ),
         };
         
         //lights
@@ -463,9 +476,10 @@ impl IGameLogic for GameLogic {
         v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
                                            _light: self._lights[0].clone(),
                                            _camera: self._camera.clone(),
-                                           _md5: ( self._md5.0.clone(), self._md5.1.clone() ) } );
+                                           _md5_precompute: self._md5_precompute.clone(),
+        } );
         
-        self._state._time_game += 0.4;
+        self._state._time_game += 1.;
 
         v
     }
@@ -488,6 +502,6 @@ fn main() {
     
     let mut k : Kernel<GameLogic> = Kernel::new().unwrap();
     
-    k.run();
+    k.run().is_ok();
     
 }

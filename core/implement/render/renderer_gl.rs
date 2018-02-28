@@ -103,25 +103,25 @@ impl IRenderer for Renderer {
                     self.add_obj( dummy_str, x )?;
                     let t1 = Local::now();
                     let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
-                    info!( "t_render_add_obj: {} ms", t_delta );
+                    debug!( "t_render_add_obj: {} ms", t_delta );
                 },
                 Event::LoadShader( x ) => {
                     self.load_shader( x.as_slice() )?;
                     let t1 = Local::now();
                     let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
-                    info!( "t_render_load_shader: {} ms", t_delta );
+                    debug!( "t_render_load_shader: {} ms", t_delta );
                 },
                 Event::LoadTexture( s, data, w, h ) => {
                     self.load_texture( s, &data, w, h )?;
                     let t1 = Local::now();
                     let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
-                    info!( "t_render_load_texture: {} ms", t_delta );
+                    debug!( "t_render_load_texture: {} ms", t_delta );
                 },
                 Event::CreateDrawGroup( x ) => {
                     self.create_draw_group( x )?;
                     let t1 = Local::now();
                     let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
-                    info!( "t_render_create_draw_group: {} ms", t_delta );
+                    debug!( "t_render_create_draw_group: {} ms", t_delta );
                 },
             }
             util_gl::check_last_op();
@@ -146,15 +146,15 @@ impl IRenderer for Renderer {
 
         {
             let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
-            info!( "t_draw_group_bind: {} ms", t_delta );
+            debug!( "t_draw_group_bind: {} ms", t_delta );
         }
         {
             let t_delta = t2.signed_duration_since(t1).num_milliseconds() as f64;
-            info!( "t_draw_group_dependent_uniforms: {} ms", t_delta );
+            debug!( "t_draw_group_dependent_uniforms: {} ms", t_delta );
         }
         {
             let t_delta = t3.signed_duration_since(t2).num_milliseconds() as f64;
-            info!( "t_draw_group_dispatch: {} ms", t_delta );
+            debug!( "t_draw_group_dispatch: {} ms", t_delta );
         }
 
         Ok( () )
@@ -265,7 +265,7 @@ impl Renderer {
 
         let t_delta = t1.signed_duration_since(t0).num_milliseconds() as f64;
 
-        info!( "t_update_components_from_impl: {} ms", t_delta );
+        debug!( "t_update_components_from_impl: {} ms", t_delta );
 
         //detect command to flush and process all data in buffer
         let mut trigger_to_process_objs = false;
@@ -294,7 +294,7 @@ impl Renderer {
 
             let t_delta = t3.signed_duration_since(t2).num_milliseconds() as f64;
 
-            info!( "t_process_objs flush: {} ms", t_delta );
+            debug!( "t_process_objs flush: {} ms", t_delta );
         }
 
         Ok( self._objs.len() )

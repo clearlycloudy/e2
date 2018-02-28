@@ -18,7 +18,7 @@ pub type Tri = md5mesh::Md5Tri;
 #[derive(Debug, Clone)]
 pub struct MeshCompute {
     pub _verts: Vec< VertCompute >,
-    pub _tris: Vec< Tri >,
+    // pub _tris: Vec< Tri >,
 }
 
 #[derive(Debug, Clone)]
@@ -67,8 +67,10 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
     for i in &m._meshes {
         let mut mc = MeshCompute {
             _verts: vec![],
-            _tris: vec![],
+            // _tris: vec![],
         };
+        mc._verts.reserve_exact( i._verts.len() );
+            
         for j in &i._verts {
             let mut vc = VertCompute {
                 _pos: [0f32;3],

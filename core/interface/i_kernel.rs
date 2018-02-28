@@ -89,9 +89,9 @@ pub trait IKernel < W: IWindow,
             let t_3_2 = t3.signed_duration_since(t2).num_microseconds().unwrap() as f64;
             let t_cycle = t0.signed_duration_since(t_cycle_last).num_microseconds().unwrap() as f64;
             t_cycle_last = t0;
-            info!( "t lapse ui input filter: {} ms", t_1_0 / 1000. );
-            info!( "t lapse game logic: {} ms", t_2_1 / 1000. );
-            info!( "t lapse renderer: {} ms", t_3_2 / 1000. );
+            debug!( "t lapse ui input filter: {} ms", t_1_0 / 1000. );
+            debug!( "t lapse game logic: {} ms", t_2_1 / 1000. );
+            debug!( "t lapse renderer: {} ms", t_3_2 / 1000. );
             if t_cycle > 0. {
                 info!( "frame rate: {} Hz", 1_000_000. / t_cycle );
             }

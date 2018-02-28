@@ -1,36 +1,42 @@
-use std::str;
+extern crate mazth;
 
-use implement::math::mat::Mat3x1;
-use implement::math::quat::Quat;
+use std::str;
+use std::f32;
+
+use self::mazth::{ mat::Mat3x1, quat::Quat };
 use implement::file::md5rig;
 use implement::file::md5mesh;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VertCompute {
     pub _pos: [f32;3],
     pub _normal: [f32;3],
 }
 
-type Tri = md5mesh::Md5Tri;
+pub type Tri = md5mesh::Md5Tri;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MeshCompute {
     pub _verts: Vec< VertCompute >,
     pub _tris: Vec< Tri >,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ComputeCollection {
-    pub _meshcomputes: Vec< MeshCompute >,
+    // pub _meshcomputes: Vec< MeshCompute >, //use batch instead
     pub _bbox_lower: [f32;3],
     pub _bbox_upper: [f32;3],
+
+    pub _batch_vert: Vec< f32 >,
+    pub _batch_normal: Vec< f32 >,
+    pub _batch_tc: Vec< f32 >,
 }
 
 pub fn process( pc: & md5rig::PoseCollection, m: & md5mesh::Md5MeshRoot, pose_index_start: u64, pose_index_end: u64, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
-    if pose_index_start > pc._frames.len() as u64 {
+    if pose_index_start >= pc._frames.len() as u64 {
         return Err( "pose_index_start out of bounds." )
     }
-    if pose_index_end > pc._frames.len() as u64 {
+    if pose_index_end >= pc._frames.len() as u64 {
         return Err( "pose_index_start out of bounds." )
     }
     let interp_clamped = if 0f32 > interp {
@@ -47,10 +53,17 @@ pub fn process( pc: & md5rig::PoseCollection, m: & md5mesh::Md5MeshRoot, pose_in
 
 pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints, pose_end: & md5rig::PoseJoints, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
     let mut cc = ComputeCollection {
-        _meshcomputes: vec![],
+        // _meshcomputes: vec![],
         _bbox_lower: [0f32;3],
         _bbox_upper: [0f32;3],
+        _batch_vert: vec![],
+        _batch_normal: vec![],
+        _batch_tc: vec![],
     };
+
+    let mut max_pos = [0., 0., 0.];
+    let mut min_pos = [0., 0., 0.];
+    
     for i in &m._meshes {
         let mut mc = MeshCompute {
             _verts: vec![],
@@ -63,6 +76,7 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             };
             for k in 0..j._weight_count {
                 let weight_index = j._weight_start + k;
+
                 let w = &i._weights[ weight_index as usize ];
                 let joint_index = w._joint_index;
                 if joint_index >= pose_start._joints.len() as u64 {
@@ -74,7 +88,7 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
                 let pose_start_rigjoint = & pose_start._joints[ joint_index as usize ];
                 let pose_end_rigjoint = & pose_end._joints[ joint_index as usize ];
                 //get position of the weight after transformation with joint orientation
-                let pos_quat = Quat::<f32>::init_from_vals( w._pos[0], w._pos[1], w._pos[2], 0f32 );
+                let pos_quat = Quat::<f32>::init_from_vals_raw( w._pos[0], w._pos[1], w._pos[2], 0f32 );
                 let orient_interp = Quat::<f32>::interpolate_slerp( pose_start_rigjoint._orient, pose_end_rigjoint._orient, interp );
                 let orient_inv = orient_interp.inverse().normalize();
                 let pos_transform = pose_start_rigjoint._orient.mul( pos_quat ).mul( orient_inv );
@@ -83,6 +97,15 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
                 vc._pos[1] += ( pose_start_rigjoint._pos[1] + pos_transform._y ) * w._weight_bias;
                 vc._pos[2] += ( pose_start_rigjoint._pos[2] + pos_transform._z ) * w._weight_bias;
             }
+
+            for h in 0..3 {
+                if vc._pos[h] > max_pos[h] {
+                    max_pos[h] = vc._pos[h];
+                } else if vc._pos[h] < min_pos[h] {
+                    min_pos[h] = vc._pos[h];
+                }
+            }
+            
             mc._verts.push( vc );
         }
         //calculate vertex normal via cross product
@@ -111,20 +134,29 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             let v01 = v1.minus( &v0 ).unwrap();
             let v02 = v2.minus( &v0 ).unwrap();
             let n = v02.cross( &v01 ).expect("cross product for vertex normal invalid")
-                       .normalize().expect("normalize for vertex normal invalid");
-            for k in 0..3 {
-                mc._verts[ v0_index as usize ]._normal[ k ] = n._val[ k ];
-                mc._verts[ v1_index as usize ]._normal[ k ] = n._val[ k ];
-                mc._verts[ v2_index as usize ]._normal[ k ] = n._val[ k ];
-            }
+                .normalize().expect("normalize for vertex normal invalid");
+
+            //don't need to save these
+            // for k in 0..3 {
+            //     mc._verts[ v0_index as usize ]._normal[ k ] = n._val[ k ];
+            //     mc._verts[ v1_index as usize ]._normal[ k ] = n._val[ k ];
+            //     mc._verts[ v2_index as usize ]._normal[ k ] = n._val[ k ];
+            // }
+            
+            cc._batch_vert.extend_from_slice( &v0._val[..] );
+            cc._batch_vert.extend_from_slice( &v1._val[..] );
+            cc._batch_vert.extend_from_slice( &v2._val[..] );
+            let ns = n._val.into_iter().cycle().cloned().take(9).collect::<Vec<f32>>();
+            cc._batch_normal.extend_from_slice( &ns[..] );
+            cc._batch_tc.extend_from_slice( &[0., 0., 0., 0., 0., 0.] );
+            
         }
-        mc._tris.extend_from_slice( &i._tris[..] );
-        cc._meshcomputes.push( mc );
-        //todo: bbox
-        // for h in 0..3 {
-        //     cc._bbox_lower[h] = pose_start._bbox_lower[h];
-        //     cc._bbox_upper[h] = pose_start._bbox_upper[h];
-        // }
+        //don't need to save these
+        // mc._tris.extend_from_slice( &i._tris[..] );
+        // cc._meshcomputes.push( mc );
     }
+    
+    cc._bbox_lower = min_pos;
+    cc._bbox_upper = max_pos;
     Ok( cc )
 }

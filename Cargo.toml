@@ -1,12 +1,12 @@
 [package]
 name = "e2r"
-version = "0.5.1"
+version = "0.9.0"
 authors = ["YL <yuan6liu@gmail.com>"]
 description = "experimental rendering engine in rust"
 repository = "https://github.com/clearlycloudy/e2r/"
 keywords = [ "rendering", "graphics", "engine", "3D", "physics" ]
 license = "BSD-2-Clause"
-documentation = "https://docs.rs/e2r/0.5.0/e2rcore/"
+documentation = "https://docs.rs/e2r/0.9.0/e2rcore/"
 readme = "README.md"
 exclude = [
 "core/asset/images/*",
@@ -20,19 +20,28 @@ name = "e2rcore"
 path = "core/core.rs"
 
 [dependencies]
-gl = ">=0.6.3"
-libc = ">=0.2.26"
-glutin = ">=0.9.1"
+gl = "0.6.3"
+libc = "0.2.26"
+glutin = "0.12.0"
 rand = "0.3"
 image = "0.17.0"
 num = "0.1.40"
-log = ">=0.4.1"
-pretty_env_logger = ">=0.2.0"
+log = "0.4.1"
+pretty_env_logger = "0.2.0"
+zpatial = "0.0.0"
+mazth = "^0.2.1"
+chrono = "0.4.0"
+
+#some demos
+[[bin]]
+name = "e2r_example_kernel_impl001"
+path = "core/example/example_kernel_impl001.rs"
+
+#work in progress
+[[bin]]
+name = "n_of_a_kind"
+path = "games/n_of_a_kind/mod.rs"
 
 [[bin]]
-name = "e2r_example_kernel_impl000"
-path = "core/example/example_kernel_impl000.rs"
-
-# [[bin]]
-# name = "e2r_test_deferred"
-# path = "core/example/shading/test_deferred.rs"
+name = "model_viewer"
+path = "games/model_viewer/mod.rs"

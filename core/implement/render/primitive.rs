@@ -1,4 +1,5 @@
 extern crate pretty_env_logger;
+extern crate mazth;
 
 use std::collections::HashMap;
 use std::any::Any;
@@ -7,13 +8,14 @@ use interface::i_ele;
 use interface::i_renderobj;
 use interface::i_component;
 
-use implement::math::mat;
+use self::mazth::mat;
 
 /// # 6 sided polyhedral / box
 #[derive(Clone)]
 pub struct Poly6 {
     /// # _pos := center of the box
     pub _pos: mat::Mat3x1< f32 >,
+    pub _scale: mat::Mat3x1< f32 >,
     /// # _radius := approximation of the box size
     pub _radius: f32,
 }
@@ -26,14 +28,14 @@ impl i_ele::IObjImpl for Poly6 {
 
         //store vertex data
         {
-            let x0 = self._pos[0] - self._radius/2.0;
-            let x1 = self._pos[0] + self._radius/2.0;
+            let x0 = self._pos[0] - self._radius/2.0 * self._scale[0];
+            let x1 = self._pos[0] + self._radius/2.0 * self._scale[0];
 
-            let y0 = self._pos[1] - self._radius/2.0;
-            let y1 = self._pos[1] + self._radius/2.0;
+            let y0 = self._pos[1] - self._radius/2.0 * self._scale[1];
+            let y1 = self._pos[1] + self._radius/2.0 * self._scale[1];
 
-            let z0 = self._pos[2] - self._radius/2.0;
-            let z1 = self._pos[2] + self._radius/2.0;
+            let z0 = self._pos[2] - self._radius/2.0 * self._scale[2];
+            let z1 = self._pos[2] + self._radius/2.0 * self._scale[2];
 
             let mut pos = vec![];
             let mut normal = vec![];
@@ -350,9 +352,9 @@ impl i_ele::IObjImpl for SphereIcosahedron {
             let r = self._radius;
             let offset = self._pos;
             for i in faces.iter() {
-                let x = self._positions[ i[0] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k as u32] ).collect::<Vec<f32> >();
-                let y = self._positions[ i[1] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k as u32] ).collect::<Vec<f32> >();
-                let z = self._positions[ i[2] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k as u32] ).collect::<Vec<f32> >();
+                let x = self._positions[ i[0] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k] ).collect::<Vec<f32> >();
+                let y = self._positions[ i[1] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k] ).collect::<Vec<f32> >();
+                let z = self._positions[ i[2] ].into_iter().enumerate().map(|(k,o)| o*r + offset[k] ).collect::<Vec<f32> >();
 
                 let n = mat::Mat3x1 { _val: [ z[0]-y[0], z[1]-y[1], z[2]-y[2] ] }.cross( & mat::Mat3x1 { _val: [ x[0]-y[0], x[1]-y[1], x[2]-y[2] ] } ).unwrap().normalize().unwrap();
                 pos.extend_from_slice( &x[..] );

@@ -5,7 +5,7 @@ pub trait IWindow {
     type EventType;
     type SignalRequestType;
     
-    fn init( dimx: u64, dimy: u64 ) -> Self;
+    fn new( dimx: u64, dimy: u64 ) -> Self;
     fn make_current( & self ) -> Result< (), & 'static str >;
     fn handle_events < F > ( & mut self, cb: F ) -> () where F: FnMut( Self::EventType ) -> ();
     fn handle_events_pass_thru( & mut self ) -> Option< Self::EventType >;

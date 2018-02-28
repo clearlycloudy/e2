@@ -53,6 +53,7 @@ impl RenderDrawGroup {
             _format: format,
             _stride: stride as _,
             _primitive_type: i_renderobj::RenderObjType::TRI,
+            // _primitive_type: i_renderobj::RenderObjType::POINT,
         }
     }
     pub fn init_with_default_format_point( internal_group_handle: u64, buffer_handle: u64 ) -> RenderDrawGroup {

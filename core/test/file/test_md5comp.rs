@@ -20,10 +20,41 @@ fn test_parse_md5comp(){
         Ok( o ) => o,
         Err( e ) => panic!( e ),
     };
-    assert!( 5 < posecollection._frames.len() );
-    let _comp = match md5comp::process( & posecollection, & mesh, 0, 5, 0.5f32 ){
-        Ok( o ) => o,
-        Err( e ) => panic!( e ),
-    };
-    // println!( "{:?}", comp );
+    assert!( anim._numframes as usize == posecollection._frames.len() );
+
+    for n in 0..posecollection._frames.len() as u64 - 1 {
+        let _comp = match md5comp::process( & posecollection, & mesh, n, n+1, 0.0f32 ){
+            Ok( o ) => o,
+            Err( e ) => panic!( e ),
+        };
+        println!( "number of meshes: {:?}", _comp._meshcomputes.len() );
+
+        let mut pos = vec![];
+        let mut nor = vec![];
+        for i in _comp._meshcomputes.iter() {
+            for j in i._tris.iter() {
+                for k in 0..3 {
+                    let idx_vert = j._vert_indices[ k ];
+                    let vert = & i._verts[ idx_vert as usize ];
+                    pos.push( vert._pos );
+                    nor.push( vert._normal );
+                }
+            }
+        }
+        println!( "min bbox pos: {:?}", _comp._bbox_lower );
+        println!( "max bbox pos: {:?}", _comp._bbox_upper );
+        
+        assert!( pos.len() % 3 == 0 );
+        assert!( nor.len() % 3 == 0 );
+
+        // for i in &pos {
+        //     println!( "pos: {:?}", i );
+        // }
+        // for i in &nor {
+        //     // assert!( i[0] * i[0] + i[1] * i[1] + i[2] * i[2] <= 1. );
+        //     println!( "normal: {:?}", i );
+        // }
+        // println!( "pos: {:?}", pos );
+        // println!( "nor: {:?}", nor );
+    }
 }

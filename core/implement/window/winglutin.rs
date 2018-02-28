@@ -28,7 +28,7 @@ impl IWindow for WinGlutin {
     type EventType = glutin::Event;
     type SignalRequestType = DummySignalRequestType;
 
-    fn init( w: u64, h: u64 ) -> WinGlutin {
+    fn new( w: u64, h: u64 ) -> WinGlutin {
         let gl_request = glutin::GlRequest::Latest;
         let c = glutin::ContextBuilder::new().with_vsync( true ).with_gl( gl_request );
         let wb = glutin::WindowBuilder::new().with_dimensions( w as u32, h as u32 );

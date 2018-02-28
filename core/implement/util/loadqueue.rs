@@ -1,5 +1,3 @@
-use interface::i_load::ILoad;
-
 #[derive(Clone, Debug)]
 pub struct LoadQueue < T > {
     _buf: Vec< T >,

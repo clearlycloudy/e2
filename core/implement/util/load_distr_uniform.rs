@@ -2,8 +2,6 @@ extern crate rand;
 
 use self::rand::distributions::{IndependentSample, Range};
 
-use interface::i_load::ILoad;
-
 #[derive(Clone, Debug)]
 pub struct LoadDistrUniform < T > {
     _buf: Vec< T >,

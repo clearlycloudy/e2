@@ -1,4 +1,5 @@
 extern crate pretty_env_logger;
+extern crate mazth;
 
 use std::collections::HashMap;
 use std::vec::Vec;
@@ -9,8 +10,7 @@ use interface::i_renderobj;
 use interface::i_ele;
 use interface::i_component;
 
-use implement::math::mat::Mat4;
-use implement::math::mat::Mat3x1;
+use self::mazth::mat::{ Mat4, Mat3x1 };
 
 #[derive(Clone)]
 pub struct LightAdsPoint {

@@ -277,7 +277,8 @@ impl IGameLogic for GameLogic {
         //load sample md5 model from file
         let file_mesh = md5common::file_open( "core/asset/md5/qshambler.md5mesh" ).expect("md5mesh file open invalid");
         let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack01.md5anim" ).expect("md5anim file open invalid");
-        let mesh = match md5mesh::parse( &file_mesh ) {
+        let mesh = match md5mesh_nom::parse( &file_mesh ) {
+        // let mesh = match md5mesh::parse( &file_mesh ) {
             Ok( o ) => o,
             Err( e ) => panic!( e ),
         };

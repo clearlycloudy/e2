@@ -14,19 +14,17 @@ md5mesh & md5anim file format import
 
 # Todos:
 
-Refactoring major components for engine to be localized
+File parsing using nom
 
 Create camera utilities and trajectory controllers
 
+Add texture support
+
+Refactoring major components for engine
+
 Hook up a number of low level blocks into the kernel: model parsers ( .obj ), spatial accelerators( bvh, gjk )
 
-Create model asset and texture managers
-
-Add better debugging and console input facilities
-
 Implement multithreading support for front end and some of the back end pipelines
-
-Do feasibility study of using physically based rendering approach as an alternative rendering pipeline
 
 # Screenshots:
 

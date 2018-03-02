@@ -524,7 +524,6 @@ pub fn parse( file_content: &str ) -> Result< Md5MeshRoot, & 'static str > {
                     nom::IResult::Done( i, o ) => {
                         progress = true;
                         buf = i;
-                        true
                     },
                     _ => {
                         return Err( "joint opening token not found" )

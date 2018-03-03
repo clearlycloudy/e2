@@ -4,30 +4,11 @@ use std::str;
 use std::clone::Clone;
 
 use self::mazth::quat::Quat;
-use implement::file::md5anim;
 
-#[derive(Debug, Clone)]
-pub struct RigJoint {
-    pub _name: String,
-    pub _parent: i64,
-    pub _pos: [f32;3],
-    pub _orient: Quat<f32>,
-}
+use interface::i_md5::rig::{ PoseCollection, PoseJoints, RigJoint };
+use interface::i_md5::anim::{ Md5AnimRoot, Bound, JointHierarchy, FrameJoint, Frame };
 
-#[derive(Debug, Clone)]
-pub struct PoseJoints {
-    pub _joints: Vec< RigJoint >,
-    // pub _bbox_lower: [f32;3], //todo
-    // pub _bbox_upper: [f32;3],
-}
-
-#[derive(Debug, Clone)]
-pub struct PoseCollection {
-    pub _frames: Vec< PoseJoints >,
-    pub _framerate: u64,
-}
-
-pub fn process( anim: & md5anim::Md5AnimRoot ) -> Result< PoseCollection, & 'static str > {
+pub fn process( anim: & Md5AnimRoot ) -> Result< PoseCollection, & 'static str > {
     let mut pc = PoseCollection {
         _frames: vec![],
         _framerate: 0u64,
@@ -43,7 +24,7 @@ pub fn process( anim: & md5anim::Md5AnimRoot ) -> Result< PoseCollection, & 'sta
     Ok( pc )
 }
 
-fn process_posejoints( f: & md5anim::Frame, _bbox: & md5anim::Bound, hier: & Vec< md5anim::JointHierarchy >, baseframe: & Vec< md5anim::FrameJoint > ) -> Result< PoseJoints, & 'static str > {
+fn process_posejoints( f: & Frame, _bbox: & Bound, hier: & Vec< JointHierarchy >, baseframe: & Vec< FrameJoint > ) -> Result< PoseJoints, & 'static str > {
     //hierarchy and baseframe length should be equal
     let mut pj = PoseJoints {
         _joints: vec![],

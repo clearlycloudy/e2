@@ -1,10 +1,13 @@
 extern crate mazth;
 
+use self::mazth::quat::Quat;
+
 use std::str;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use self::mazth::quat::Quat;
+use interface::i_md5::mesh::*;
+
 use implement::file::md5common;
 
 #[derive(Debug)]
@@ -25,75 +28,6 @@ pub enum Token {
     Tri,
     Numweights,
     Weight,
-}
-
-#[derive(Debug, Clone)]
-pub struct Md5Mesh {
-    pub _shader: String,
-    pub _numverts: u64,
-    pub _numtris: u64,
-    pub _numweights: u64,
-    pub _verts: Vec< Md5Vert >,
-    pub _tris: Vec< Md5Tri >,
-    pub _weights: Vec< Md5Weight >,
-}
-
-#[derive(Debug, Clone)]
-pub struct Md5Joint {
-    pub _name: String,
-    pub _parent_index: i64,
-    pub _pos: [f32;3],
-    pub _orient: [f32;3],
-    pub _rot: Quat<f32>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Md5Vert {
-    pub _index: u64,
-    pub _tex_coords: [f32;2],
-    pub _weight_start: u64,
-    pub _weight_count: u64,
-    pub _normal: [f32;3],
-    pub _pos: [f32;3],
-}
-
-#[derive(Debug)]
-#[derive(Copy)]
-#[derive(Clone)]
-pub struct Md5Tri {
-    pub _index: u64,
-    pub _vert_indices: [u64;3],
-}
-
-#[derive(Debug, Clone)]
-pub struct Md5Weight {
-    pub _index: u64,
-    pub _joint_index: u64,
-    pub _weight_bias: f32,
-    pub _pos: [f32;3],
-}
-
-#[derive(Debug, Clone)]
-pub struct Md5MeshRoot {
-    pub _md5ver: u64,
-    pub _cmdline: String,
-    pub _numjoints: u64,
-    pub _nummeshes: u64,
-    pub _joints: Vec< Md5Joint >,
-    pub _meshes: Vec< Md5Mesh >,
-}
-
-impl Md5MeshRoot {
-    pub fn init() -> Md5MeshRoot {
-        Md5MeshRoot {
-            _md5ver: 0u64,
-            _cmdline: String::from(""),
-            _numjoints: 0u64,
-            _nummeshes: 0u64,
-            _joints: vec![],
-            _meshes: vec![],
-        }
-    }
 }
 
 pub fn process_joint( file_content: &str, idx: usize, hm: & HashMap< &str, Token > ) -> Result< ( usize, Md5Joint ), & 'static str > {

@@ -19,6 +19,8 @@ use self::e2rcore::interface::i_ele;
 use self::e2rcore::interface::i_game_logic::IGameLogic;
 use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode, /*State, Coord*/ };
 use self::e2rcore::interface::i_scheduler::IScheduler;
+use self::e2rcore::interface::i_file::IParseStr;
+use self::e2rcore::interface::i_md5;
 
 use self::e2rcore::implement::render::renderer_gl;
 use self::e2rcore::implement::render::util_gl;
@@ -177,7 +179,7 @@ pub enum RenderObj {
         _time_game: f32,
         _light: light::LightAdsPoint,
         _camera: camera::Cam,
-        _md5_precompute: Rc< Vec<md5comp::ComputeCollection> >,
+        _md5_precompute: Rc< Vec<i_md5::compute::ComputeCollection> >,
     },
 }
 
@@ -257,8 +259,8 @@ pub struct GameLogic {
     _path_shader_fs: String,
     _state: GameState,
     _uicam: UiCam,
-    _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot ),
-    _md5_precompute: Rc< Vec< md5comp::ComputeCollection > >,
+    _md5: ( i_md5::rig::PoseCollection, i_md5::mesh::Md5MeshRoot ),
+    _md5_precompute: Rc< Vec< i_md5::compute::ComputeCollection > >,
 }
 
 impl IGameLogic for GameLogic {
@@ -277,7 +279,7 @@ impl IGameLogic for GameLogic {
         //load sample md5 model from file
         let file_mesh = md5common::file_open( "core/asset/md5/qshambler.md5mesh" ).expect("md5mesh file open invalid");
         let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack01.md5anim" ).expect("md5anim file open invalid");
-        let mesh = match md5mesh_nom::parse( &file_mesh ) {
+        let mesh = match <md5mesh_nom::Md5MeshParser as IParseStr>::parse( &file_mesh ) {
         // let mesh = match md5mesh::parse( &file_mesh ) {
             Ok( o ) => o,
             Err( e ) => panic!( e ),
@@ -297,9 +299,6 @@ impl IGameLogic for GameLogic {
 
         let mut bbox_lower = [ 0.; 3 ];
         let mut bbox_upper = [ 0.; 3 ];
-
-        info!( "bbox_lower: {:?}", bbox_lower );
-        info!( "bbox_upper: {:?}", bbox_upper );
         
         for frame in 0..posecollection._frames.len() - 1 {
             for j in 0..2 {
@@ -318,6 +317,9 @@ impl IGameLogic for GameLogic {
                 }
             }
         }
+
+        info!( "bbox_lower: {:?}", bbox_lower );
+        info!( "bbox_upper: {:?}", bbox_upper );
 
         //camera
         let fov = 114f32;

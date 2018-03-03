@@ -8,8 +8,10 @@ use std::str;
 use std::str::FromStr;
 
 use self::nom::digit;
-use implement::file::md5mesh::*;
 
+use interface::i_md5::mesh::*;
+use interface::i_file::IParseStr;
+    
 named!( shader_path< &str, String >,
         do_parse!(
             ws!( tag!("shader") ) >>
@@ -442,200 +444,206 @@ fn peek_and_consume_comments( mut input: & str ) -> Option< & str > {
     None
 }
 
-pub fn parse( file_content: &str ) -> Result< Md5MeshRoot, & 'static str > {
+pub struct Md5MeshParser {}
 
-    // let input = file_open( "core/asset/md5/qshambler.md5mesh" ).expect( "input file invalid" );
+impl IParseStr for Md5MeshParser {
+    type output = Md5MeshRoot;
 
-    let mut buf = file_content;
+    fn parse( file_content: &str ) -> Result< Self::output, & 'static str > {
 
-    let mut version = None;
-    let mut cmdline = None;
-    let mut num_joints = None;
-    let mut num_meshes = None;
+        // let input = file_open( "core/asset/md5/qshambler.md5mesh" ).expect( "input file invalid" );
 
-    let mut joints : Vec< Md5Joint > = vec![];
-    let mut meshes : Vec< Md5Mesh > = vec![];
-    
-    loop {
+        let mut buf = file_content;
 
-        let mut progress = false;
+        let mut version = None;
+        let mut cmdline = None;
+        let mut num_joints = None;
+        let mut num_meshes = None;
+
+        let mut joints : Vec< Md5Joint > = vec![];
+        let mut meshes : Vec< Md5Mesh > = vec![];
         
-        match peek_version( buf ) {
-            nom::IResult::Done( _, _ ) => {
-                match md5_version( buf ) {
-                    nom::IResult::Done( i, o ) => {
-                        version = Some( o );
-                        buf = i;
-                        progress = true;
-                    },
-                    _ => {},
-                }
-            },
-            _ => {},
-        }
+        loop {
 
-        match peek_commandline( buf ) {
-            nom::IResult::Done( _, _ ) => {
-                match md5_commandline( buf ) {
-                    nom::IResult::Done( i, o ) => {
-                        cmdline = Some( o );
-                        buf = i;
-                        progress = true;
-                    },
-                    _ => {},
-                }
-            },
-            _ => {},
-        }
+            let mut progress = false;
+            
+            match peek_version( buf ) {
+                nom::IResult::Done( _, _ ) => {
+                    match md5_version( buf ) {
+                        nom::IResult::Done( i, o ) => {
+                            version = Some( o );
+                            buf = i;
+                            progress = true;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {},
+            }
 
-        match peek_numJoints( buf ) {
-            nom::IResult::Done( _, _ ) => {
-                match md5_numJoints( buf ) {
-                    nom::IResult::Done( i, o ) => {
-                        debug!( "num joints: {:?}", o );
-                        num_joints = Some( o );
-                        buf = i;
-                        progress = true;
-                    },
-                    _ => {},
-                }
-            },
-            _ => {},
-        }
+            match peek_commandline( buf ) {
+                nom::IResult::Done( _, _ ) => {
+                    match md5_commandline( buf ) {
+                        nom::IResult::Done( i, o ) => {
+                            cmdline = Some( o );
+                            buf = i;
+                            progress = true;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {},
+            }
 
-        match peek_numMeshes( buf ) {
-            nom::IResult::Done( _, _ ) => {
-                match md5_numMeshes( buf ) {
-                    nom::IResult::Done( i, o ) => {
-                        debug!( "num meshes: {:?}", o );
-                        num_meshes = Some( o );
-                        buf = i;
-                        progress = true;
-                    },
-                    _ => {},
-                }
-            },
-            _ => {},
-        }
+            match peek_numJoints( buf ) {
+                nom::IResult::Done( _, _ ) => {
+                    match md5_numJoints( buf ) {
+                        nom::IResult::Done( i, o ) => {
+                            debug!( "num joints: {:?}", o );
+                            num_joints = Some( o );
+                            buf = i;
+                            progress = true;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {},
+            }
 
-        match peek_joints( buf ) {
-            nom::IResult::Done( _, _ ) => {
-                match md5mesh_joints_opening( buf ) {
-                    nom::IResult::Done( i, o ) => {
-                        progress = true;
-                        buf = i;
-                    },
-                    _ => {
-                        return Err( "joint opening token not found" )
-                    },
-                }
-                match num_joints {
-                    None => {
-                        return Err( "num joints not specified at point of point parsing" )
-                    },
-                    _ => {},
-                }
-                
-                let n = num_joints.unwrap();
-                let mut count = 0;
-                while count < n {
+            match peek_numMeshes( buf ) {
+                nom::IResult::Done( _, _ ) => {
+                    match md5_numMeshes( buf ) {
+                        nom::IResult::Done( i, o ) => {
+                            debug!( "num meshes: {:?}", o );
+                            num_meshes = Some( o );
+                            buf = i;
+                            progress = true;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {},
+            }
+
+            match peek_joints( buf ) {
+                nom::IResult::Done( _, _ ) => {
+                    match md5mesh_joints_opening( buf ) {
+                        nom::IResult::Done( i, o ) => {
+                            progress = true;
+                            buf = i;
+                        },
+                        _ => {
+                            return Err( "joint opening token not found" )
+                        },
+                    }
+                    match num_joints {
+                        None => {
+                            return Err( "num joints not specified at point of point parsing" )
+                        },
+                        _ => {},
+                    }
+                    
+                    let n = num_joints.unwrap();
+                    let mut count = 0;
+                    while count < n {
+                        match peek_and_consume_comments( buf ) {
+                            Some(x) => {
+                                progress = true;
+                                buf = x;
+                                continue;
+                            },
+                            _ => {}
+                        }
+                        match md5mesh_joint( buf ) {
+                            nom::IResult::Done( i, o ) => {
+                                buf = i;
+                                progress = true;
+                                joints.push( o );
+                            },
+                            _ => {
+                                return Err("joint parse unsuccessful")
+                            },
+                        }
+
+                        count += 1;
+                    }                
+
                     match peek_and_consume_comments( buf ) {
                         Some(x) => {
-                            progress = true;
                             buf = x;
-                            continue;
                         },
                         _ => {}
                     }
-                    match md5mesh_joint( buf ) {
+
+                    match md5mesh_joints_closing( buf ) {
                         nom::IResult::Done( i, o ) => {
-                            buf = i;
                             progress = true;
-                            joints.push( o );
+                            buf = i;
                         },
-                        _ => {
-                            return Err("joint parse unsuccessful")
-                        },
+                        _ => {},
                     }
+                },
+                _ => {},
+            }
 
-                    count += 1;
-                }                
+            if !progress {
+                break;
+            }
+        }
 
-                match peek_and_consume_comments( buf ) {
-                    Some(x) => {
-                        buf = x;
-                    },
-                    _ => {}
-                }
+        match peek_and_consume_comments( buf ) {
+            Some(x) => { buf = x; },
+            _ => {},
+        }
 
-                match md5mesh_joints_closing( buf ) {
-                    nom::IResult::Done( i, o ) => {
-                        progress = true;
-                        buf = i;
-                    },
-                    _ => {},
-                }
+        match num_meshes {
+            None => {
+                return Err( "num meshes not present" );
             },
             _ => {},
         }
 
-        if !progress {
-            break;
+        for _ in 0..num_meshes.unwrap() {
+            match parse_mesh( buf ) {
+                Ok( ( b, m ) ) => {
+                    buf = b;
+                    meshes.push( m );                
+                },
+                Err(e) => {
+                    return Err(e)
+                }
+            };
         }
-    }
 
-    match peek_and_consume_comments( buf ) {
-        Some(x) => { buf = x; },
-        _ => {},
-    }
+        debug!("num joints: {:?}", joints.len() );
+        debug!("num meshes: {:?}", meshes.len() );
 
-    match num_meshes {
-        None => {
-            return Err( "num meshes not present" );
-        },
-        _ => {},
-    }
-
-    for _ in 0..num_meshes.unwrap() {
-        match parse_mesh( buf ) {
-            Ok( ( b, m ) ) => {
-                buf = b;
-                meshes.push( m );                
+        if let None = version {
+            return Err( "version not present" );
+        }
+        if let None = cmdline {
+            return Err( "cmdline not present" );
+        }
+        match num_joints {
+            Some(x) => {
+                if x != joints.len() as isize {
+                    assert_eq!( x, joints.len() as isize );
+                }
+            }
+            _ => {
+                return Err( "num joints not present" );
             },
-            Err(e) => {
-                return Err(e)
-            }
-        };
-    }
-
-    debug!("num joints: {:?}", joints.len() );
-    debug!("num meshes: {:?}", meshes.len() );
-
-    if let None = version {
-        return Err( "version not present" );
-    }
-    if let None = cmdline {
-        return Err( "cmdline not present" );
-    }
-    match num_joints {
-        Some(x) => {
-            if x != joints.len() as isize {
-                assert_eq!( x, joints.len() as isize );
-            }
         }
-        _ => {
-            return Err( "num joints not present" );
-        },
+
+        assert_eq!( num_meshes.unwrap(), meshes.len() as isize );
+
+        Ok( Md5MeshRoot {
+            _md5ver: version.unwrap() as u64,
+            _cmdline: cmdline.unwrap(),
+            _numjoints: num_joints.unwrap() as u64,
+            _nummeshes: num_meshes.unwrap() as u64,
+            _joints: joints,
+            _meshes: meshes,
+        } )
     }
-
-    assert_eq!( num_meshes.unwrap(), meshes.len() as isize );
-
-    Ok( Md5MeshRoot {
-        _md5ver: version.unwrap() as u64,
-        _cmdline: cmdline.unwrap(),
-        _numjoints: num_joints.unwrap() as u64,
-        _nummeshes: num_meshes.unwrap() as u64,
-        _joints: joints,
-        _meshes: meshes,
-    } )
 }

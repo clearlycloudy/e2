@@ -230,7 +230,7 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                 assert!( mesh._batch_pos.len() % 3 == 0 );
                 assert!( mesh._batch_pos.len() == mesh._batch_normal.len() );
                 assert!( mesh._batch_tc.len() / 2 == mesh._batch_pos.len() / 3 );
-
+                
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
                 
                 // let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },

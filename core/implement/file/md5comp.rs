@@ -52,6 +52,7 @@ pub fn interpolate( m: & Md5MeshRoot, pose_start: & PoseJoints, pose_end: & Pose
             let mut vc = VertCompute {
                 _pos: [0f32;3],
                 _normal: [0f32;3],
+                _tc: j._tex_coords,
             };
             for k in 0..j._weight_count {
                 let weight_index = j._weight_start + k;
@@ -84,7 +85,7 @@ pub fn interpolate( m: & Md5MeshRoot, pose_start: & PoseJoints, pose_end: & Pose
                     min_pos[h] = vc._pos[h];
                 }
             }
-            
+
             mc._verts.push( vc );
         }
         //calculate vertex normal via cross product
@@ -110,6 +111,11 @@ pub fn interpolate( m: & Md5MeshRoot, pose_start: & PoseJoints, pose_end: & Pose
             let v2 = Mat3x1 {
                 _val: mc._verts[ v2_index as usize ]._pos,
             };
+
+            let tc0 = mc._verts[ v2_index as usize ]._tc;
+            let tc1 = mc._verts[ v2_index as usize ]._tc;
+            let tc2 = mc._verts[ v2_index as usize ]._tc;
+            
             let v01 = v1.minus( &v0 ).unwrap();
             let v02 = v2.minus( &v0 ).unwrap();
             let n = v02.cross( &v01 ).expect("cross product for vertex normal invalid")
@@ -127,8 +133,10 @@ pub fn interpolate( m: & Md5MeshRoot, pose_start: & PoseJoints, pose_end: & Pose
             cc._batch_vert.extend_from_slice( &v2._val[..] );
             let ns = n._val.into_iter().cycle().cloned().take(9).collect::<Vec<f32>>();
             cc._batch_normal.extend_from_slice( &ns[..] );
-            cc._batch_tc.extend_from_slice( &[0., 0., 0., 0., 0., 0.] );
-            
+            // cc._batch_tc.extend_from_slice( &[0., 0., 0., 0., 0., 0.] );
+            cc._batch_tc.extend_from_slice( &[ tc0[0], tc0[1],
+                                               tc1[0], tc1[1],
+                                               tc2[0], tc2[1] ] );
         }
         //don't need to save these
         // mc._tris.extend_from_slice( &i._tris[..] );

@@ -170,6 +170,7 @@ pub mod compute {
     pub struct VertCompute {
         pub _pos: [f32;3],
         pub _normal: [f32;3],
+        pub _tc: [f32;2],
     }
 
     #[derive(Debug, Clone)]

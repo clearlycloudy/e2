@@ -538,7 +538,7 @@ impl IParseStr for Md5MeshParser {
                     }
                     match num_joints {
                         None => {
-                            return Err( "num joints not specified at point of point parsing" )
+                            return Err( "num joints not specified at point of joint parsing" )
                         },
                         _ => {},
                     }

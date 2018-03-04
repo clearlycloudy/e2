@@ -18,14 +18,6 @@ named!( peek_version< &str, &str >,
         )
 );
 
-named!( md5_version< &str, isize >,
-        do_parse!(
-            ws!( tag!("MD5Version") ) >>
-            version: map_res!( ws!(digit), FromStr::from_str ) >>
-            ( version )
-        )
-);
-
 named!( peek_commandline< &str, &str >,
         peek!(
             ws!( tag!("commandline") )
@@ -50,25 +42,9 @@ named!( peek_numFrames< &str, &str >,
         )
 );
 
-named!( md5_numFrames< &str, usize >,
-        do_parse!(
-            ws!( tag!("numFrames") ) >>
-            num: map_res!( ws!(digit), FromStr::from_str ) >>
-            ( num )
-        )
-);
-
 named!( peek_numJoints< &str, &str >,
         peek!(
             ws!( tag!("numJoints") )
-        )
-);
-
-named!( md5_numJoints< &str, usize >,
-        do_parse!(
-            ws!( tag!("numJoints") ) >>
-            num: map_res!( ws!(digit), FromStr::from_str ) >>
-            ( num )
         )
 );
 
@@ -78,23 +54,14 @@ named!( peek_frameRate< &str, &str >,
         )
 );
 
-named!( md5_frameRate< &str, isize >,
-        do_parse!(
-            ws!( tag!("frameRate") ) >>
-            num: map_res!( ws!(digit), FromStr::from_str ) >>
-            ( num )
-        )
-);
-
 named!( peek_numAnimatedComponents< &str, &str >,
         peek!(
             ws!( tag!("numAnimatedComponents") )
         )
 );
 
-named!( md5_numAnimatedComponents< &str, usize >,
+named!( single_u64< &str, u64 >,
         do_parse!(
-            ws!( tag!("numAnimatedComponents") ) >>
             num: map_res!( ws!(digit), FromStr::from_str ) >>
             ( num )
         )
@@ -252,6 +219,15 @@ named!( md5anim_baseframe< &str, FrameJoint >,
         )
 );
 
+named!( single_word< &str, &str >,
+        do_parse!(
+            word: ws!(nom::alphanumeric) >>
+            (
+                word
+            )
+        )
+);
+
 named!( single_float< &str, f32 >,
         do_parse!(
             num: ws!(nom::float_s) >>
@@ -319,7 +295,7 @@ fn peek_and_consume_comments( mut input: & str ) -> Option< & str > {
 }
 
 
-fn parse_hierarchy( mut buf: & str, num_joints: Option<usize> ) -> Result< ( & str, Vec< JointHierarchy > ), & 'static str > {
+fn parse_hierarchy( mut buf: & str, num_joints: Option<u64> ) -> Result< ( & str, Vec< JointHierarchy > ), & 'static str > {
 
     let mut hierarchies : Vec< JointHierarchy > = vec![];
     
@@ -383,7 +359,7 @@ fn parse_hierarchy( mut buf: & str, num_joints: Option<usize> ) -> Result< ( & s
     Ok( ( buf, hierarchies ) )
 }
 
-fn parse_bounds( mut buf: & str, num_frames: Option< usize > ) -> Result< ( & str, Vec< Bound > ), & 'static str > {
+fn parse_bounds( mut buf: & str, num_frames: Option< u64 > ) -> Result< ( & str, Vec< Bound > ), & 'static str > {
 
     let mut bounds : Vec< Bound > = vec![];
 
@@ -447,7 +423,7 @@ fn parse_bounds( mut buf: & str, num_frames: Option< usize > ) -> Result< ( & st
     Ok( ( buf, bounds ) )
 }
 
-fn parse_baseframe( mut buf: & str, num_joints: Option< usize > ) -> Result< ( & str, Vec< FrameJoint > ), & 'static str > {
+fn parse_baseframe( mut buf: & str, num_joints: Option< u64 > ) -> Result< ( & str, Vec< FrameJoint > ), & 'static str > {
 
     let mut baseframe : Vec< FrameJoint > = vec![];
     
@@ -512,17 +488,17 @@ fn parse_baseframe( mut buf: & str, num_joints: Option< usize > ) -> Result< ( &
     Ok( ( buf, baseframe ) )
 }
 
-fn parse_frame( mut buf: & str, num_animated_components: Option< usize > ) -> Result< ( & str, Frame ), & 'static str > {
-    let mut frame_idx =  0;
-    match md5anim_frame_opening( buf ) { //returns the frame index number
+fn parse_frame( mut buf: & str, num_animated_components: Option< u64 > ) -> Result< ( & str, Frame ), & 'static str > {
+    
+    let frame_idx = match md5anim_frame_opening( buf ) { //returns the frame index number
         nom::IResult::Done( i, o ) => {
             buf = i;
-            frame_idx = o;
+            o
         },
         _ => {
             return Err( "frame opening token not found" )
         },
-    }
+    };
 
     match num_animated_components {
         None => {
@@ -567,6 +543,16 @@ fn parse_frame( mut buf: & str, num_animated_components: Option< usize > ) -> Re
     Ok( ( buf, f ) )
 }
 
+fn consume_alphanumeric( buf: & str ) -> Result< & str, & 'static str > {
+    match single_word( buf ) {
+        nom::IResult::Done( i, o ) => {
+            return Ok( i )
+        },
+        _ => {
+            return Err( "consuming alphanumeric unsuccessful" )
+        },
+    }
+}
 pub struct Md5AnimParser {}
 
 impl IParseStr for Md5AnimParser {
@@ -592,7 +578,8 @@ impl IParseStr for Md5AnimParser {
 
             match peek_version( buf ) {
                 nom::IResult::Done( _, _ ) => {
-                    match md5_version( buf ) {
+                    buf = consume_alphanumeric( buf ).unwrap();
+                    match single_u64( buf ) {
                         nom::IResult::Done( i, o ) => {
                             version = Some( o );
                             buf = i;
@@ -620,7 +607,8 @@ impl IParseStr for Md5AnimParser {
 
             match peek_numFrames( buf ) {
                 nom::IResult::Done( _, _ ) => {
-                    match md5_numFrames( buf ) {
+                    buf = consume_alphanumeric( buf ).unwrap();
+                    match single_u64( buf ) {
                         nom::IResult::Done( i, o ) => {
                             debug!( "num meshes: {:?}", o );
                             num_frames = Some( o );
@@ -635,7 +623,8 @@ impl IParseStr for Md5AnimParser {
 
             match peek_numJoints( buf ) {
                 nom::IResult::Done( _, _ ) => {
-                    match md5_numJoints( buf ) {
+                    buf = consume_alphanumeric( buf ).unwrap();
+                    match single_u64( buf ) {
                         nom::IResult::Done( i, o ) => {
                             debug!( "num joints: {:?}", o );
                             num_joints = Some( o );
@@ -650,7 +639,8 @@ impl IParseStr for Md5AnimParser {
 
             match peek_frameRate( buf ) {
                 nom::IResult::Done( _, _ ) => {
-                    match md5_frameRate( buf ) {
+                    buf = consume_alphanumeric( buf ).unwrap();
+                    match single_u64( buf ) {
                         nom::IResult::Done( i, o ) => {
                             debug!( "num frameRate: {:?}", o );
                             frame_rate = Some( o );
@@ -665,7 +655,8 @@ impl IParseStr for Md5AnimParser {
 
             match peek_numAnimatedComponents( buf ) {
                 nom::IResult::Done( _, _ ) => {
-                    match md5_numAnimatedComponents( buf ) {
+                    buf = consume_alphanumeric( buf ).unwrap();
+                    match single_u64( buf ) {
                         nom::IResult::Done( i, o ) => {
                             debug!( "num numAnimatedComponents: {:?}", o );
                             num_animated_components = Some( o );
@@ -744,12 +735,12 @@ impl IParseStr for Md5AnimParser {
         }
 
         Ok( Md5AnimRoot {
-            _md5ver: version.unwrap() as u64,
+            _md5ver: version.unwrap(),
             _cmdline: cmdline.unwrap(),
-            _numframes: num_frames.unwrap() as u64,
-            _numjoints: num_joints.unwrap() as u64,
-            _framerate: frame_rate.unwrap() as u64,
-            _num_animated_components: num_animated_components.unwrap() as u64,
+            _numframes: num_frames.unwrap(),
+            _numjoints: num_joints.unwrap(),
+            _framerate: frame_rate.unwrap(),
+            _num_animated_components: num_animated_components.unwrap(),
             _hierarchy: hierarchies,
             _bounds: bounds,
             _baseframe: baseframe,

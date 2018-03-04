@@ -4,35 +4,12 @@ use std::str;
 use std::f32;
 
 use self::mazth::{ mat::Mat3x1, quat::Quat };
-use implement::file::md5rig;
-use implement::file::md5mesh;
 
-#[derive(Debug, Clone)]
-pub struct VertCompute {
-    pub _pos: [f32;3],
-    pub _normal: [f32;3],
-}
+use interface::i_md5::compute::*;
+use interface::i_md5::rig::{ PoseCollection, PoseJoints };
+use interface::i_md5::mesh::Md5MeshRoot;
 
-pub type Tri = md5mesh::Md5Tri;
-
-#[derive(Debug, Clone)]
-pub struct MeshCompute {
-    pub _verts: Vec< VertCompute >,
-    // pub _tris: Vec< Tri >,
-}
-
-#[derive(Debug, Clone)]
-pub struct ComputeCollection {
-    // pub _meshcomputes: Vec< MeshCompute >, //use batch instead
-    pub _bbox_lower: [f32;3],
-    pub _bbox_upper: [f32;3],
-
-    pub _batch_vert: Vec< f32 >,
-    pub _batch_normal: Vec< f32 >,
-    pub _batch_tc: Vec< f32 >,
-}
-
-pub fn process( pc: & md5rig::PoseCollection, m: & md5mesh::Md5MeshRoot, pose_index_start: u64, pose_index_end: u64, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
+pub fn process( pc: & PoseCollection, m: & Md5MeshRoot, pose_index_start: u64, pose_index_end: u64, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
     if pose_index_start >= pc._frames.len() as u64 {
         return Err( "pose_index_start out of bounds." )
     }
@@ -51,7 +28,7 @@ pub fn process( pc: & md5rig::PoseCollection, m: & md5mesh::Md5MeshRoot, pose_in
     interpolate( m, start, end, interp_clamped )
 }
 
-pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints, pose_end: & md5rig::PoseJoints, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
+pub fn interpolate( m: & Md5MeshRoot, pose_start: & PoseJoints, pose_end: & PoseJoints, interp: f32 ) -> Result< ComputeCollection, & 'static str > {
     let mut cc = ComputeCollection {
         // _meshcomputes: vec![],
         _bbox_lower: [0f32;3],
@@ -75,6 +52,7 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             let mut vc = VertCompute {
                 _pos: [0f32;3],
                 _normal: [0f32;3],
+                _tc: j._tex_coords,
             };
             for k in 0..j._weight_count {
                 let weight_index = j._weight_start + k;
@@ -107,7 +85,7 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
                     min_pos[h] = vc._pos[h];
                 }
             }
-            
+
             mc._verts.push( vc );
         }
         //calculate vertex normal via cross product
@@ -133,6 +111,11 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             let v2 = Mat3x1 {
                 _val: mc._verts[ v2_index as usize ]._pos,
             };
+
+            let tc0 = mc._verts[ v2_index as usize ]._tc;
+            let tc1 = mc._verts[ v2_index as usize ]._tc;
+            let tc2 = mc._verts[ v2_index as usize ]._tc;
+            
             let v01 = v1.minus( &v0 ).unwrap();
             let v02 = v2.minus( &v0 ).unwrap();
             let n = v02.cross( &v01 ).expect("cross product for vertex normal invalid")
@@ -150,8 +133,10 @@ pub fn interpolate( m: & md5mesh::Md5MeshRoot, pose_start: & md5rig::PoseJoints,
             cc._batch_vert.extend_from_slice( &v2._val[..] );
             let ns = n._val.into_iter().cycle().cloned().take(9).collect::<Vec<f32>>();
             cc._batch_normal.extend_from_slice( &ns[..] );
-            cc._batch_tc.extend_from_slice( &[0., 0., 0., 0., 0., 0.] );
-            
+            // cc._batch_tc.extend_from_slice( &[0., 0., 0., 0., 0., 0.] );
+            cc._batch_tc.extend_from_slice( &[ tc0[0], tc0[1],
+                                               tc1[0], tc1[1],
+                                               tc2[0], tc2[1] ] );
         }
         //don't need to save these
         // mc._tris.extend_from_slice( &i._tris[..] );

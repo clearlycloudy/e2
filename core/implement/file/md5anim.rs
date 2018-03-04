@@ -2,6 +2,8 @@ use std::str;
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use interface::i_md5::anim::*;
+
 use implement::file::md5common;
 
 #[derive(Debug)]
@@ -19,64 +21,6 @@ pub enum Token {
     Bounds,
     Baseframe,
     Frame,
-}
-
-#[derive(Debug)]
-pub struct JointHierarchy {
-    pub _name: String,
-    pub _parent: i64,
-    pub _flags: u64,
-    pub _start_index: u64,
-}
-
-#[derive(Debug)]
-pub struct Bound {
-    pub _min: [f32;3],
-    pub _max: [f32;3],
-}
-
-#[derive(Debug)]
-pub struct FrameJoint {
-    pub _index: u64,
-    pub _pos: [f32;3],
-    pub _orient: [f32;3],
-}
-
-#[derive(Debug)]
-pub struct Frame {
-    pub _index: u64,
-    pub _data: Vec< f32 >,
-}
-
-#[derive(Debug)]
-pub struct Md5AnimRoot {
-    pub _md5ver: u64,
-    pub _cmdline: String,
-    pub _numframes: u64,
-    pub _numjoints: u64,
-    pub _framerate: u64,
-    pub _num_animated_components: u64,
-    pub _hierarchy: Vec< JointHierarchy >,
-    pub _bounds: Vec< Bound >,
-    pub _baseframe: Vec< FrameJoint >,
-    pub _frames: Vec< Frame >,
-}
-
-impl Md5AnimRoot {
-    pub fn init() -> Md5AnimRoot {
-        Md5AnimRoot {
-            _md5ver: 0u64,
-            _cmdline: String::from(""),
-            _numframes: 0u64,
-            _numjoints: 0u64,
-            _framerate: 0u64,
-            _num_animated_components: 0u64,
-            _hierarchy: vec![],
-            _bounds: vec![],
-            _baseframe: vec![],
-            _frames: vec![],
-        }
-    }
 }
 
 pub fn parse( file_content: &str ) -> Result< Md5AnimRoot, & 'static str > {

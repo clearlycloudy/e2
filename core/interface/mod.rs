@@ -16,3 +16,5 @@ pub mod i_load;
 pub mod i_kernel;
 pub mod i_ui;
 pub mod i_scheduler;
+pub mod i_file;
+pub mod i_md5;

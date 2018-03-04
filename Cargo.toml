@@ -1,12 +1,12 @@
 [package]
 name = "e2r"
-version = "0.9.2"
+version = "0.9.3"
 authors = ["YL <yuan6liu@gmail.com>"]
 description = "experimental rendering engine in rust"
 repository = "https://github.com/clearlycloudy/e2r/"
 keywords = [ "rendering", "graphics", "engine", "3D", "physics" ]
 license = "BSD-2-Clause"
-documentation = "https://docs.rs/e2r/0.9.2/e2rcore/"
+documentation = "https://docs.rs/e2r/0.9.3/e2rcore/"
 readme = "README.md"
 exclude = [
 "core/asset/images/*",
@@ -31,6 +31,7 @@ pretty_env_logger = "0.2.0"
 zpatial = "0.0.0"
 mazth = "^0.2.1"
 chrono = "0.4.0"
+nom = "^3.2"
 
 #some demos
 [[bin]]

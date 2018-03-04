@@ -7,3 +7,5 @@ pub mod implement;
 pub mod test;
 
 #[macro_use] extern crate log;
+
+#[macro_use] extern crate nom;

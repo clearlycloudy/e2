@@ -19,6 +19,8 @@ use self::e2rcore::interface::i_ele;
 use self::e2rcore::interface::i_game_logic::IGameLogic;
 use self::e2rcore::interface::i_ui::{ InputFiltered, KeyCode, /*State, Coord*/ };
 use self::e2rcore::interface::i_scheduler::IScheduler;
+use self::e2rcore::interface::i_file::IParseStr;
+use self::e2rcore::interface::i_md5;
 
 use self::e2rcore::implement::render::renderer_gl;
 use self::e2rcore::implement::render::util_gl;
@@ -177,7 +179,7 @@ pub enum RenderObj {
         _time_game: f32,
         _light: light::LightAdsPoint,
         _camera: camera::Cam,
-        _md5_precompute: Rc< Vec<md5comp::ComputeCollection> >,
+        _md5_precompute: Rc< Vec<i_md5::compute::ComputeCollection> >,
     },
 }
 
@@ -228,7 +230,7 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                 assert!( mesh._batch_pos.len() % 3 == 0 );
                 assert!( mesh._batch_pos.len() == mesh._batch_normal.len() );
                 assert!( mesh._batch_tc.len() / 2 == mesh._batch_pos.len() / 3 );
-
+                
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
                 
                 // let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
@@ -257,8 +259,8 @@ pub struct GameLogic {
     _path_shader_fs: String,
     _state: GameState,
     _uicam: UiCam,
-    _md5: ( md5rig::PoseCollection, md5mesh::Md5MeshRoot ),
-    _md5_precompute: Rc< Vec< md5comp::ComputeCollection > >,
+    _md5: ( i_md5::rig::PoseCollection, i_md5::mesh::Md5MeshRoot ),
+    _md5_precompute: Rc< Vec< i_md5::compute::ComputeCollection > >,
 }
 
 impl IGameLogic for GameLogic {
@@ -276,15 +278,23 @@ impl IGameLogic for GameLogic {
 
         //load sample md5 model from file
         let file_mesh = md5common::file_open( "core/asset/md5/qshambler.md5mesh" ).expect("md5mesh file open invalid");
-        let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack01.md5anim" ).expect("md5anim file open invalid");
-        let mesh = match md5mesh::parse( &file_mesh ) {
+        // let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack01.md5anim" ).expect("md5anim file open invalid");
+        let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack02.md5anim" ).expect("md5anim file open invalid");
+        // let file_anim = md5common::file_open( "core/asset/md5/qshambleridle.md5anim" ).expect("md5anim file open invalid");
+        // let file_anim = md5common::file_open( "core/asset/md5/qshamblerwalk.md5anim" ).expect("md5anim file open invalid");
+
+        let mesh = match <md5mesh_nom::Md5MeshParser as IParseStr>::parse( &file_mesh ) {
+        // let mesh = match md5mesh::parse( &file_mesh ) {
             Ok( o ) => o,
             Err( e ) => panic!( e ),
         };
-        let anim = match md5anim::parse( &file_anim ) {
+        
+        let anim = match <md5anim_nom::Md5AnimParser as IParseStr>::parse( &file_anim ) {
+        // let anim = match md5anim::parse( &file_anim ) {
             Ok( o ) => o,
             Err( e ) => panic!( e ),
         };
+
         let posecollection = match md5rig::process( & anim ) {
             Ok( o ) => o,
             Err( e ) => panic!( e ),
@@ -296,9 +306,6 @@ impl IGameLogic for GameLogic {
 
         let mut bbox_lower = [ 0.; 3 ];
         let mut bbox_upper = [ 0.; 3 ];
-
-        info!( "bbox_lower: {:?}", bbox_lower );
-        info!( "bbox_upper: {:?}", bbox_upper );
         
         for frame in 0..posecollection._frames.len() - 1 {
             for j in 0..2 {
@@ -318,6 +325,9 @@ impl IGameLogic for GameLogic {
             }
         }
 
+        info!( "bbox_lower: {:?}", bbox_lower );
+        info!( "bbox_upper: {:?}", bbox_upper );
+
         //camera
         let fov = 114f32;
         let aspect = 1f32;
@@ -327,9 +337,9 @@ impl IGameLogic for GameLogic {
                                                 (bbox_upper[1] + bbox_lower[1])/2.,
                                                 (bbox_upper[2] + bbox_lower[2])/2., ] };
         let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
-        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 25.,
-                                            bbox_upper[1] + 25.,
-                                            bbox_upper[2] + 25.] };
+        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 5.,
+                                            bbox_upper[1] + 5.,
+                                            bbox_upper[2] + 5.] };
         let cam_id = 0;
         let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
 
@@ -452,7 +462,7 @@ impl IGameLogic for GameLogic {
         let axis_right = axis_front.cross( & self._camera._up ).unwrap().normalize().unwrap();
 
         let move_front = axis_front.scale( self._uicam._move.0 as f32 * 0.3 ).unwrap();
-        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.75 ).unwrap();
+        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.25 ).unwrap();
         let move_up = self._camera._up.normalize().unwrap().scale( self._uicam._move.2 as f32 * 0.3 ).unwrap();
         
         pos = pos.plus( & move_front.plus( & move_right ).unwrap().plus( & move_up ).unwrap() ).unwrap();

@@ -734,6 +734,18 @@ impl IParseStr for Md5AnimParser {
             return Err( "num animated components not found")
         }
 
+        frames.sort_by_key( |x| x._index );
+
+        for (k,v) in frames.iter().enumerate() {
+            if k as u64 != v._index {
+                return Err( "frame index missing" )
+            }
+        }
+        
+        if frames.len() != num_frames.unwrap() as usize {
+            return Err( "frame length not match expected" )
+        }
+        
         Ok( Md5AnimRoot {
             _md5ver: version.unwrap(),
             _cmdline: cmdline.unwrap(),

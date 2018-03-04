@@ -278,7 +278,10 @@ impl IGameLogic for GameLogic {
 
         //load sample md5 model from file
         let file_mesh = md5common::file_open( "core/asset/md5/qshambler.md5mesh" ).expect("md5mesh file open invalid");
-        let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack01.md5anim" ).expect("md5anim file open invalid");
+        // let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack01.md5anim" ).expect("md5anim file open invalid");
+        let file_anim = md5common::file_open( "core/asset/md5/qshamblerattack02.md5anim" ).expect("md5anim file open invalid");
+        // let file_anim = md5common::file_open( "core/asset/md5/qshambleridle.md5anim" ).expect("md5anim file open invalid");
+        // let file_anim = md5common::file_open( "core/asset/md5/qshamblerwalk.md5anim" ).expect("md5anim file open invalid");
 
         let mesh = match <md5mesh_nom::Md5MeshParser as IParseStr>::parse( &file_mesh ) {
         // let mesh = match md5mesh::parse( &file_mesh ) {
@@ -334,9 +337,9 @@ impl IGameLogic for GameLogic {
                                                 (bbox_upper[1] + bbox_lower[1])/2.,
                                                 (bbox_upper[2] + bbox_lower[2])/2., ] };
         let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
-        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 25.,
-                                            bbox_upper[1] + 25.,
-                                            bbox_upper[2] + 25.] };
+        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 5.,
+                                            bbox_upper[1] + 5.,
+                                            bbox_upper[2] + 5.] };
         let cam_id = 0;
         let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
 
@@ -459,7 +462,7 @@ impl IGameLogic for GameLogic {
         let axis_right = axis_front.cross( & self._camera._up ).unwrap().normalize().unwrap();
 
         let move_front = axis_front.scale( self._uicam._move.0 as f32 * 0.3 ).unwrap();
-        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.75 ).unwrap();
+        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.25 ).unwrap();
         let move_up = self._camera._up.normalize().unwrap().scale( self._uicam._move.2 as f32 * 0.3 ).unwrap();
         
         pos = pos.plus( & move_front.plus( & move_right ).unwrap().plus( & move_up ).unwrap() ).unwrap();

@@ -99,7 +99,7 @@ pub mod anim {
         pub _orient: [f32;3],
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct Frame {
         pub _index: u64,
         pub _data: Vec< f32 >,

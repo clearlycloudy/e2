@@ -1,75 +1,58 @@
-///module for camera motion by wrapping a render camera
-///and additional property interpolators to be used for motion stepping
-
 extern crate mazth;
 
-use std::collections::HashMap;
 use interface::i_interpolate::*;
-use interface::i_camera::ICamera;
 
 use self::mazth::mat::*;
-// use implement::math::frustum::*;
-use implement::render::camera;
+
+// use implement::render::camera;
+
+use self::mazth::mat::Mat4x1;
+use self::mazth::i_comparable::IComparableError;
+
+use interface::i_interpolate::IInterpolate;
+
+use interface::i_step::Step;
+
+use interface::i_waypoint::IWaypoint;
+
+use implement::step::step_interpolate;
+
+use implement::math::spline_bezier::SplineBezier;
+
+use implement::math::piecewise::Piecewise;
 
 pub struct CamGuide {
-    ///interpolators of various properties of camera. todo: extract them out to a separate module
-    pub _prop_interp: HashMap< camera::PropKey, Box< IInterpolate< Mat4x1< f64 >, Item = Mat4x1< f64 > > > >,
-    ///values to be applied to interpolators
-    pub _prop_next_update: HashMap< camera::PropKey, camera::PropVal >,
-    ///camera for rendering
-    pub _cam: camera::Cam,
+    pub _pos_trajectory: Option< Piecewise< SplineBezier, Mat4x1<f64> > >,
 }
 
-impl Default for CamGuide {
-    fn default() -> CamGuide {
-        let fov = 120f32;
-        let aspect = 1f32;
-        let near = 0.001f32;
-        let far = 1000f32;
-        let cam_foc_pos = Mat3x1 { _val: [0f32, 0f32, 10f32] };
-        let cam_up = Mat3x1 { _val: [0f32, 1f32, 0f32] };
-        let cam_pos = Mat3x1 { _val: [0f32, 0f32, 0f32] };
-        let cam_id = 0; //dummy for now
-        CamGuide {
-            _prop_interp: HashMap::new(),
-            _prop_next_update: HashMap::new(),
-            _cam: camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up ),
-        }
-    }
-}
-
-impl CamGuide {
-    pub fn init( c: camera::Cam ) -> CamGuide {
-        CamGuide {
-            _prop_interp: HashMap::new(),
-            _prop_next_update: HashMap::new(),
-            _cam: c,
-        }        
-    }
-}
-
-impl ICamera for CamGuide {
-    fn clear_property_next( & mut self ) {
-        self._prop_next_update.clear();
-    }
-    ///buffer values to be set for interpolators
-    fn set_property_next( & mut self, prop: ( camera::PropKey, camera::PropVal ) ) -> Result< (), & 'static str > {
-        self._prop_next_update.insert( prop.0, prop.1 );
-        Ok( () )
-    }
-    ///apply values into the interpolator in order for the interpolater to advance closer to the input value in upcoming interpolating cycles
-    fn flush_property_next( & mut self ) -> Result< (), & 'static str > {
+impl IWaypoint for CamGuide {
+    fn set_next( & mut self, pos: Mat4x1<f64> ){
         unimplemented!();
+        // match self._pos_trajectory {
+        //     None => {
+        //         let mut splines = Piecewise::init();
+        //         let cp0 = pos;
+        //         // let cp1 = Mat4x1 { _val: [ 5f64, 6f64, 7f64, 8f64 ] };
+        //         // let cp2 = Mat4x1 { _val: [ 10f64, 16f64, 17f64, 18f64 ] };
+        //         // let cp3 = Mat4x1 { _val: [ 0f64, 1f64, -2f64, -3f64 ] };
+        //         let spline = SplineBezier::init( 10 , cp0, cp1, cp2, cp3 );
+        //         splines.add( spline );
+        //         self._pos_trajectory = splines;
+        //     },
+        //     Some(x) => {
+        //         // let cp0 = pos;
+        //         // // let cp1 = Mat4x1 { _val: [ 5f64, 6f64, 7f64, 8f64 ] };
+        //         // // let cp2 = Mat4x1 { _val: [ 10f64, 16f64, 17f64, 18f64 ] };
+        //         // // let cp3 = Mat4x1 { _val: [ 0f64, 1f64, -2f64, -3f64 ] };
+        //         // let spline = SplineBezier::init( 10 , cp0, cp1, cp2, cp3 );
+        //         // splines.add( spline );
+        //     },
+        // }
     }
-    ///run property interpolators for some steps
-    fn run_interpolators( & mut self, _steps: i64 ) -> Result< (), & 'static str > {
-        unimplemented!();
+    fn get_trajectory( & mut self ) -> & mut Option< Piecewise< SplineBezier, Mat4x1<f64> > > {
+        & mut self._pos_trajectory
     }
-    ///apply current interpolator values to camera properties
-    fn apply_interp_to_cam( & mut self ) -> Result< ( & camera::Cam ), & 'static str > {
-        unimplemented!();
-    }
-    fn get_cam( & mut self ) -> & camera::Cam {
-        unimplemented!();
+    fn flush( & mut self ){
+        self._pos_trajectory = None;
     }
 }

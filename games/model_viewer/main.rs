@@ -51,6 +51,12 @@ use self::e2rcore::implement::kernel::kernel_impl_001::Kernel;
 
 use self::e2rcore::implement::file::*;
 
+use self::e2rcore::interface::i_wavefront;
+
+use self::e2rcore::implement::file::md5common;
+use self::e2rcore::implement::file::wavefrontobj;
+use self::e2rcore::implement::file::wavefrontcomp;
+
 //todo: put this somewhere else
 pub fn file_open( file_path: & str ) -> Option<String> {
     let path = File::open( file_path ).expect("file path open invalid");
@@ -181,6 +187,12 @@ pub enum RenderObj {
         _camera: camera::Cam,
         _md5_precompute: Rc< Vec<i_md5::compute::ComputeCollection> >,
     },
+    TestGeometryObj {
+        _time_game: f32,
+        _light: light::LightAdsPoint,
+        _camera: camera::Cam,
+        _obj_compute: Rc< i_wavefront::compute::ComputeCollection >,
+    },
 }
 
 
@@ -246,6 +258,37 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
 
                 render_events
             },
+            RenderObj::TestGeometryObj{ _time_game, _light, _camera, _obj_compute } =>{
+
+                let mut render_events = vec![];
+                
+                let mut mesh = mesh::Mesh::init( 0 );
+
+                // let frame = _time_game as usize % _obj_compute.len();
+
+                mesh._batch_pos = _obj_compute._batch_vert.clone();
+                mesh._batch_normal = _obj_compute._batch_normal.clone();
+                mesh._batch_tc = _obj_compute._batch_tc.clone();
+                
+                assert!( mesh._batch_pos.len() % 3 == 0 );
+                assert!( mesh._batch_pos.len() == mesh._batch_normal.len() );
+                assert!( mesh._batch_tc.len() / 2 == mesh._batch_pos.len() / 3 );
+                
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
+                
+                // let prim_plane = primitive::Poly6 { _pos: mat::Mat3x1 { _val: [ 0f32, 0f32, 0f32 ] },
+                //                                    _scale: mat::Mat3x1 { _val: [ 1., 1., 0.001 ] },
+                //                                    _radius: 5f32 };
+
+                // render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( prim_plane ) ) );
+                
+                let l = &_light;
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( l.clone() ) ) );
+
+                render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( _camera.clone() ) ) );
+
+                render_events
+            },
         }
     }
 }
@@ -261,6 +304,7 @@ pub struct GameLogic {
     _uicam: UiCam,
     _md5: ( i_md5::rig::PoseCollection, i_md5::mesh::Md5MeshRoot ),
     _md5_precompute: Rc< Vec< i_md5::compute::ComputeCollection > >,
+    _obj_compute: Rc< i_wavefront::compute::ComputeCollection >,
 }
 
 impl IGameLogic for GameLogic {
@@ -325,6 +369,15 @@ impl IGameLogic for GameLogic {
             }
         }
 
+        let file_content = md5common::file_open( "core/asset/obj/25-vaz-2108/2108_tri.obj" ).expect("file open invalid");
+        println!("file content length: {}", file_content.len() );
+
+        let wavefront_obj = wavefrontobj::parse( &file_content ).expect("parse unsuccessful");
+        let obj_compute = wavefrontcomp::process( & wavefront_obj ).expect("obj compute unsuccessful");
+
+        // let bbox_upper = obj_compute._bbox_upper.clone();
+        // let bbox_lower = obj_compute._bbox_lower.clone();
+        
         info!( "bbox_lower: {:?}", bbox_lower );
         info!( "bbox_upper: {:?}", bbox_upper );
 
@@ -337,9 +390,9 @@ impl IGameLogic for GameLogic {
                                                 (bbox_upper[1] + bbox_lower[1])/2.,
                                                 (bbox_upper[2] + bbox_lower[2])/2., ] };
         let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
-        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 5.,
-                                            bbox_upper[1] + 5.,
-                                            bbox_upper[2] + 5.] };
+        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 15.,
+                                            bbox_upper[1] + 15.,
+                                            bbox_upper[2] + 15.] };
         let cam_id = 0;
         let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
 
@@ -358,6 +411,7 @@ impl IGameLogic for GameLogic {
             },
             _md5: ( posecollection , mesh ),
             _md5_precompute: Rc::new( animation ),
+            _obj_compute: Rc::new( obj_compute ),
         };
         
         //lights
@@ -482,11 +536,17 @@ impl IGameLogic for GameLogic {
 
         self._camera._pos_orig = pos_new;
 
+        // println!( "self._obj_compute: {:?}", self._obj_compute );
+        
         //dummy geometry to render
         v.push( RenderObj::TestGeometry { _time_game: self._state._time_game,
                                            _light: self._lights[0].clone(),
                                            _camera: self._camera.clone(),
                                            _md5_precompute: self._md5_precompute.clone(),
+        // v.push( RenderObj::TestGeometryObj { _time_game: self._state._time_game,
+        //                                       _light: self._lights[0].clone(),
+        //                                       _camera: self._camera.clone(),
+        //                                       _obj_compute: self._obj_compute.clone(),
         } );
         
         self._state._time_game += 1.;

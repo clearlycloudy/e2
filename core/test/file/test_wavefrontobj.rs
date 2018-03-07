@@ -3,7 +3,8 @@ use implement::file::wavefrontobj;
 
 #[test]
 fn test_parse_wavefrontobj(){
-    let file_content = md5common::file_open( "core/asset/obj/2b/source/2B.obj" ).expect("file open invalid");
+
+    let file_content = md5common::file_open( "core/asset/obj/25-vaz-2108/2108_tri.obj" ).expect("file open invalid");
     println!("file content length: {}", file_content.len() );
 
     let _wavefront_objs = wavefrontobj::parse( &file_content ).expect("parse unsuccessful");

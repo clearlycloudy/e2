@@ -35,8 +35,8 @@ pub mod compute {
     #[derive(Debug, Clone)]
     pub struct ComputeCollection {
 
-        // pub _bbox_lower: [f32;3],
-        // pub _bbox_upper: [f32;3],
+        pub _bbox_lower: [f32;3],
+        pub _bbox_upper: [f32;3],
 
         pub _batch_vert: Vec< f32 >,
         pub _batch_normal: Vec< f32 >,

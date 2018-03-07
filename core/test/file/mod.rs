@@ -10,3 +10,4 @@ pub mod test_md5rig_nom;
 pub mod test_md5comp_nom;
 pub mod test_ppm;
 pub mod test_wavefrontobj;
+pub mod test_wavefrontcomp;

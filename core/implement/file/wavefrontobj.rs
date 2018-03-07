@@ -12,13 +12,22 @@ use self::nom::digit;
 use interface::i_wavefront::obj::*;
 use interface::i_file::IParseStr;
 
+// named!(end_of_line, alt!(
+//     nom::eof!()
+//         |
+//     nom::eol
+//         |
+//     comment  // handle end of line comments - these are not kept
+// ));
+
+// named!(comment, delimited!(
+//     tag!("#"),
+//     take_until!("\n"),
+//     alt!( eof!() | nom::eol )
+// ));
+
 named!( single_word< &str, &str >,
-        do_parse!(
-            word: ws!(nom::alphanumeric) >>
-            (
-                word
-            )
-        )
+        take_until_either!(" \n\r\t")
 );
 
 //todo: add "_" to the set of allowable characters
@@ -35,7 +44,6 @@ named!( parse_mtllib< &str, String >,
         do_parse!(
             ws!( tag!("mtllib") ) >>
             path: single_word >>
-            tag!(".mtl") >> 
             ( path.to_string() )
         )
 );
@@ -43,7 +51,7 @@ named!( parse_mtllib< &str, String >,
 named!( parse_material< &str, String >,
         do_parse!(
             ws!( tag!("usemtl") ) >>
-            mtl: any_nonwhitespace >>
+            mtl: single_word >>
             ( mtl.to_string() )
         )
 );
@@ -53,6 +61,20 @@ named!( parse_g< &str, String >,
             ws!( tag!("g") ) >>
             path: single_word >>
             ( path.to_string() )
+        )
+);
+
+named!( parse_s< &str, String >,
+        do_parse!(
+            ws!( tag!("s") ) >>
+            path: single_word >>
+            ( path.to_string() )
+        )
+);
+
+named!( peek_s< &str, &str >,
+        peek!(
+            ws!( tag!("s") )
         )
 );
 
@@ -146,15 +168,18 @@ named!( f_vn< &str, Face >,
         do_parse!(
             ws!( tag!("f") ) >>
             v0: map_res!(ws!(digit), FromStr::from_str) >>
-            tag!("/") >>
+            ws!(tag!("/")) >>
+            ws!(tag!("/")) >>
             n0: map_res!(ws!(digit), FromStr::from_str) >>
 
             v1: map_res!(ws!(digit), FromStr::from_str) >>
-            tag!("/") >>
+            ws!(tag!("/")) >>
+            ws!(tag!("/")) >>
             n1: map_res!(ws!(digit), FromStr::from_str) >>
 
             v2: map_res!(ws!(digit), FromStr::from_str) >>
-            tag!("/") >>
+            ws!(tag!("/")) >>
+            ws!(tag!("/")) >>
             n2: map_res!(ws!(digit), FromStr::from_str) >>
                 
             (
@@ -306,6 +331,19 @@ fn parse_group( mut buf: & str ) -> Result< ( & str, Option<Group> ), & 'static 
             _ => {}
         }
 
+        match peek_s( buf ) {
+            nom::IResult::Done( i, o ) => {
+                match parse_s( buf ) {
+                    nom::IResult::Done( i, o ) => {
+                        buf = i;
+                        progress = true;
+                    },
+                    _ => {},
+                }
+            },
+            _ => {},
+        }
+        
         match peek_g( buf ) {
             nom::IResult::Done( i, o ) => {
                 if let Some(_) = group {
@@ -470,13 +508,13 @@ pub fn parse( input: & str ) -> Result< Collection, & 'static str > {
 
     loop {
         
-        println!("Loop");
+        // println!("Loop");
         let mut progress = false;
         match parse_group( buf ) {
             Ok( ( i, g ) ) => {
                 match g {
                     Some(o) => {
-                        println!( "{:?}", o );
+                        // println!( "{:?}", o );
                         groups.push( o );
                         buf = i;
                         progress = true;

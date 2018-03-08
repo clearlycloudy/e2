@@ -14,6 +14,7 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::rc::Rc;
+use std::f32;
 
 use self::e2rcore::interface::i_ele;
 use self::e2rcore::interface::i_game_logic::IGameLogic;
@@ -348,19 +349,16 @@ impl IGameLogic for GameLogic {
         //prcompute animations
         let mut animation = vec![];
 
-        let mut bbox_lower = [ 0.; 3 ];
-        let mut bbox_upper = [ 0.; 3 ];
+        let mut bbox_lower = [ 0f32; 3 ];
+        let mut bbox_upper = [ 0f32; 3 ];
         
         for frame in 0..posecollection._frames.len() - 1 {
             for j in 0..2 {
                 match md5comp::process( & posecollection, & mesh, frame as u64, frame as u64 + 1, 0.5 * j as f32 ){
                     Ok( o ) => {
                         for h in 0..3 {
-                            if o._bbox_upper[h] > bbox_upper[h]{
-                               bbox_upper[h] = o._bbox_upper[h];
-                            } else if o._bbox_lower[h] < bbox_lower[h]{
-                                bbox_lower[h] = o._bbox_lower[h];
-                            }
+                            bbox_upper[h] = bbox_upper[h].max( o._bbox_upper[h] );
+                            bbox_lower[h] = bbox_lower[h].min( o._bbox_lower[h] );
                         }
                         animation.push( o );
                     },
@@ -369,7 +367,7 @@ impl IGameLogic for GameLogic {
             }
         }
 
-        let file_content = md5common::file_open( "core/asset/obj/25-vaz-2108/2108_tri.obj" ).expect("file open invalid");
+        let file_content = md5common::file_open( "core/asset/obj/sniper/rifle_mod_2.obj" ).expect("file open invalid");
         println!("file content length: {}", file_content.len() );
 
         let wavefront_obj = wavefrontobj::parse( &file_content ).expect("parse unsuccessful");
@@ -390,9 +388,9 @@ impl IGameLogic for GameLogic {
                                                 (bbox_upper[1] + bbox_lower[1])/2.,
                                                 (bbox_upper[2] + bbox_lower[2])/2., ] };
         let cam_up = mat::Mat3x1 { _val: [0f32, 0f32, 1f32] };
-        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 15.,
-                                            bbox_upper[1] + 15.,
-                                            bbox_upper[2] + 15.] };
+        let cam_pos = mat::Mat3x1 { _val: [ bbox_upper[0] + 5.,
+                                            bbox_upper[1] + 5.,
+                                            bbox_upper[2] + 5.] };
         let cam_id = 0;
         let cam = camera::Cam::init( cam_id, fov, aspect, near, far, cam_pos, cam_foc_pos, cam_up );
 

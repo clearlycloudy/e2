@@ -1,5 +1,4 @@
 use interface::i_file::IParseStr;
-use interface::i_md5::anim::Md5AnimRoot;
 
 use implement::file::md5common;
 use implement::file::md5anim_nom::*;

@@ -214,15 +214,15 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
                     ] );
                 render_events.push( event_load_shader );
 
-                let img = image::open( &Path::new( "core/asset/images/texture0.jpg" ) ).unwrap();
-                debug!( "image dimension: {:?}", img.dimensions() );
-                debug!( "image type: {:?}", img.color() );
+                // let img = image::open( &Path::new( "core/asset/images/texture0.jpg" ) ).unwrap();
+                // debug!( "image dimension: {:?}", img.dimensions() );
+                // debug!( "image type: {:?}", img.color() );
                 
-                let texture0 = texture::Texture::from( &img );
-                let texture_data = Vec::from( texture0 );
-                let ( w, h ) = img.dimensions();
-                let event_load_texture = renderer_gl::Event::LoadTexture( String::from("texture0"), texture_data, w as _, h as _ );
-                render_events.push( event_load_texture );
+                // let texture0 = texture::Texture::from( &img );
+                // let texture_data = Vec::from( texture0 );
+                // let ( w, h ) = img.dimensions();
+                // let event_load_texture = renderer_gl::Event::LoadTexture( String::from("texture0"), texture_data, w as _, h as _ );
+                // render_events.push( event_load_texture );
 
                 info!( "press q to quit." );
 
@@ -269,11 +269,11 @@ impl From< RenderObj > for Vec< renderer_gl::Event > {
 
                 mesh._batch_pos = _obj_compute._batch_vert.clone();
                 mesh._batch_normal = _obj_compute._batch_normal.clone();
-                mesh._batch_tc = _obj_compute._batch_tc.clone();
+                // mesh._batch_tc = _obj_compute._batch_tc.clone();
                 
                 assert!( mesh._batch_pos.len() % 3 == 0 );
                 assert!( mesh._batch_pos.len() == mesh._batch_normal.len() );
-                assert!( mesh._batch_tc.len() / 2 == mesh._batch_pos.len() / 3 );
+                // assert!( mesh._batch_tc.len() / 2 == mesh._batch_pos.len() / 3 );
                 
                 render_events.push( renderer_gl::Event::AddObj( i_ele::Ele::init( mesh ) ) );
                 
@@ -414,7 +414,7 @@ impl IGameLogic for GameLogic {
         
         //lights
         let mut rng = rand::thread_rng();
-        for i in 0..50 {
+        for i in 0..1 {
             let pos_x = ( (rng.gen::<u8>() % 100) as f32 / 100f32 ) * 6f32 - 3f32;
             let pos_y = ( (rng.gen::<u8>() % 100) as f32 / 100f32 ) * 6f32 - 4f32;
             let pos_z = ( (rng.gen::<u8>() % 100) as f32 / 100f32 ) * 6f32 + 10f32;

@@ -321,7 +321,7 @@ impl IGameLogic for GameLogic {
     }
 
     ///computes changed game state given user inputs and current game state
-    fn transition_states( & mut self, inputs: & [ InputFiltered ] ) -> GameStateChangePending {
+    fn transition_states( & mut self, inputs: & [ InputFiltered ], win_offset: (i32,i32), win_size: (u32,u32) ) -> GameStateChangePending {
         //todo
 
         for i in inputs.iter() {

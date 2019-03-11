@@ -27,7 +27,7 @@ impl Default for UiCam {
 }
 
 impl UiCam {
-    pub fn process( & mut self, i: & InputFiltered ) {
+    pub fn process( & mut self, i: & InputFiltered, win_offset: (i32,i32), win_size: (u32,u32) ) {
         match i {
             &InputFiltered::Button { key: KeyCode::MouseR, state: State::Press } => {
                 self._mouse_r_down = true;
@@ -79,7 +79,7 @@ impl UiCam {
                                                                       self._mouse_pos.1
                             ] };
                             
-                            self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos );
+                            self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos, win_size );
                         }
                     },
                     Coord::Y => {
@@ -96,10 +96,27 @@ impl UiCam {
                                                                       self._mouse_pos.1
                             ] };
                             
-                            self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos );
+                            self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos, win_size );
                         }
                     },
                     _ => {}
+                }
+            },
+            &InputFiltered::MouseCoord2( x, y) => {
+
+                let old_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
+                                                          self._mouse_pos.1
+                ] };
+
+                self._mouse_pos = (x,y);
+
+                if self._mouse_r_down {
+
+                    let new_mouse_pos = mat::Mat2x1 { _val: [ self._mouse_pos.0,
+                                                              self._mouse_pos.1
+                    ] };
+                    
+                    self._trackball.move_motion( & old_mouse_pos, & new_mouse_pos, win_size );
                 }
             },
             _ => {

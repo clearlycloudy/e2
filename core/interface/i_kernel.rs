@@ -66,11 +66,16 @@ pub trait IKernel < W: IWindow,
                 _ => {},
             }
 
-            let events_inputs_filtered = (self.as_mut() as & mut I).process_input_events( events_window.as_slice() );
+            let win_offset = (self.as_mut() as & mut W).get_offset().expect("window offset invalid");
+            let win_size = (self.as_mut() as & mut W).get_size().expect("window size invalid");
+            
+            // info!( "win offset: {:?}, win size: {:?}", win_offset, win_size );
+            
+            let events_inputs_filtered = (self.as_mut() as & mut I).process_input_events( events_window.as_slice(), win_offset, win_size );
 
             let t1 = Local::now();
             
-            let ( events_render, signal_exit ) : ( Vec<  _ >, bool ) = (self.as_mut() as & mut G).process_input_events( events_inputs_filtered.as_slice() );
+            let ( events_render, signal_exit ) : ( Vec< _ >, bool ) = (self.as_mut() as & mut G).process_input_events( events_inputs_filtered.as_slice(), win_offset, win_size );
 
             if signal_exit {
                 running = false;

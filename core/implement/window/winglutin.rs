@@ -3,7 +3,9 @@ extern crate glutin;
 
 use std::ops::FnMut;
 
-use self::glutin::GlContext;
+use self::glutin::Context;
+use self::glutin::dpi::{LogicalSize,PhysicalSize,PhysicalPosition};
+use self::glutin::ContextTrait;
 
 use interface::i_window::IWindow;
 
@@ -12,7 +14,7 @@ pub struct WinGlutinBase {
 }
 
 pub struct WinGlutinWin {
-    pub _wingl: glutin::GlWindow,
+    pub _wingl: glutin::WindowedContext,
 }
 
 pub struct WinGlutin {
@@ -30,14 +32,33 @@ impl IWindow for WinGlutin {
 
     fn new( w: u64, h: u64 ) -> WinGlutin {
         let gl_request = glutin::GlRequest::Latest;
-        let c = glutin::ContextBuilder::new().with_vsync( true ).with_gl( gl_request );
-        let wb = glutin::WindowBuilder::new().with_dimensions( w as u32, h as u32 );
+
+        let wb = glutin::WindowBuilder::new().with_dimensions(
+            LogicalSize::from( (w as u32,
+                                h as u32) ) );
+
         let base = WinGlutinBase {
             _eventsloop: glutin::EventsLoop::new(),
         };
+        
+        let c = glutin::ContextBuilder::new()
+            .with_vsync( true )
+            .with_gl( gl_request )
+            .build_windowed( wb, &base._eventsloop )
+            .unwrap();
+        
+        // let w = WinGlutinWin {
+        //     _wingl: glutin::Window::new( wb, c, &base._eventsloop ).unwrap(),
+        // };
+        
+        // let w = WinGlutinWin {
+        //     _wingl: wb.build( &base._eventsloop ).unwrap(),
+        // };
+
         let w = WinGlutinWin {
-            _wingl: glutin::GlWindow::new( wb, c, &base._eventsloop ).unwrap(),
+            _wingl: c, //windowed context
         };
+        
         WinGlutin {
             _base: base,
             _win: w,
@@ -79,4 +100,29 @@ impl IWindow for WinGlutin {
         }
         Ok( () )
     }
+
+    fn get_offset( & self ) -> Option<(i32,i32)> {
+        match self._win._wingl.get_position() {
+            Some( logical_pos ) => {
+                // let dpi = self._win._wingl.get_current_monitor().get_hidpi_factor();
+                let dpi = self._win._wingl.get_hidpi_factor();
+                Some( logical_pos.to_physical( dpi ).into() )
+                // Some( logical_pos.into() )
+            },
+            _ => None,
+        }
+    }
+    
+    fn get_size( & self ) -> Option<(u32,u32)> {
+        match self._win._wingl.get_inner_size() {
+            Some( logical_size ) => {
+                // let dpi = self._win._wingl.get_hidpi_factor();
+                let dpi = self._win._wingl.get_current_monitor().get_hidpi_factor();
+                Some( logical_size.to_physical( dpi ).into() )                
+                // Some( logical_size.into() )
+            },
+            _ => None,
+        }
+    }
+
 }

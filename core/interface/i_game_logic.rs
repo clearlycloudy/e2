@@ -26,7 +26,7 @@ pub trait IGameLogic
     fn get_states_mut( & mut self ) -> & mut Self::GameState;
     
     ///computes changed game state given user inputs and current game state
-    fn transition_states( & mut self, inputs: & [ Self::EventInput ] ) -> Self::GameStateChangePending;
+    fn transition_states( & mut self, inputs: & [ Self::EventInput ], win_offset: (i32,i32), win_size: (u32,u32) ) -> Self::GameStateChangePending;
 
     ///compute constraints per cycle
     fn continue_compute( & mut self ) -> bool;
@@ -50,7 +50,7 @@ pub trait IGameLogic
     // fn get_game_impl( & mut self ) -> & mut Self::GameImpl;
 
     ///default implementation
-    fn process_input_events( & mut self, e: & [ Self::EventInput ] ) -> ( Vec< Self::EventRender >, bool ) {
+    fn process_input_events( & mut self, e: & [ Self::EventInput ], win_offset: (i32,i32), win_size: (u32,u32) ) -> ( Vec< Self::EventRender >, bool ) {
 
         //process input events
         if e.len() > 0 {
@@ -58,7 +58,7 @@ pub trait IGameLogic
         }
         
         //get changed states pending for computations
-        let changed_states_pending = self.transition_states( e );
+        let changed_states_pending = self.transition_states( e, win_offset, win_size );
 
         let mut count_compute_cycle = 0;
 

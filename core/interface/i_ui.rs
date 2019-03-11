@@ -98,6 +98,7 @@ pub enum Coord {
 pub enum InputFiltered {
     Button{ key: KeyCode, state: State },
     MouseCoord( Coord, f32 ),
+    MouseCoord2( f32, f32 ),
     Ignored,
 }
 
@@ -108,5 +109,5 @@ pub trait IUi{
 
     fn new() -> Self where Self: Sized;
 
-    fn process_input_events( & mut self, e: & [ Self::EventInput ] ) -> Vec< Self::EventInputFiltered >;
+    fn process_input_events( & mut self, e: & [ Self::EventInput ], win_offset: (i32,i32), win_size: (u32,u32) ) -> Vec< Self::EventInputFiltered >;
 }

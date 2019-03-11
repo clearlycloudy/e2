@@ -25,9 +25,9 @@ impl IUi for XformInput {
         Default::default()
     }
     
-    fn process_input_events( & mut self, e: & [ Self::EventInput ] ) -> Vec< InputFiltered > {
+    fn process_input_events( & mut self, e: & [ Self::EventInput ], win_offset: (i32,i32), win_size: (u32,u32) ) -> Vec< InputFiltered > {
         let filtered = e.iter()
-            .map( |x| InputFiltered::from( x ) )
+            .map( |x| InputFiltered::from( ( x, win_offset, win_size ) ) )
             .filter( |x| if let &InputFiltered::Ignored = x { false } else { true } )
             .inspect( |x| { trace!("{:?}", x); () } )
             .collect();
@@ -37,14 +37,17 @@ impl IUi for XformInput {
 
 
 ///convert glutin::Event into i_ui::InputFiltered
-impl< 'a > From< & 'a glutin::Event > for InputFiltered {
-    fn from( e: & 'a glutin::Event ) -> Self {
+impl< 'a > From< (& 'a glutin::Event, (i32,i32), (u32,u32) )> for InputFiltered {
+    fn from( input: (& 'a glutin::Event, (i32,i32), (u32,u32) ) ) -> Self {
+        let e = input.0;
+        let win_offset = input.1;
+        let win_size = input.2;
         match e {
             &glutin::Event::WindowEvent{ ref event, .. } => match event {
-                &glutin::WindowEvent::Closed => {
+                &glutin::WindowEvent::CloseRequested => {
                     InputFiltered::Button { key: KeyCode::Close, state: State::Press }
                 },
-                &glutin::WindowEvent::Resized(_w, _h) => { //todo
+                &glutin::WindowEvent::Resized( logical_size ) => { //todo
                     InputFiltered::Ignored
                 },
                 &glutin::WindowEvent::ReceivedCharacter(x) => {
@@ -92,15 +95,28 @@ impl< 'a > From< & 'a glutin::Event > for InputFiltered {
                         },
                     }
                 },
+                // issues: conversion from measured analog reading to physical or logical screen unit
                 &glutin::WindowEvent::AxisMotion { ref axis, ref value, .. } => {
                     // info!("mouse input: {:?}, {:?}", axis, value );
-                    let coord = match axis {
-                        &0 => { Coord::X },
-                        &1 => { Coord::Y },
-                        _ => { Coord::Z },
+                    let ( coord, val ) = match axis {
+                        &0 => {
+                            // println!("window mouse event x: {}, win offset: {:?}", *value as f32, win_offset );
+                            ( Coord::X, *value as f32 - win_offset.0 as f32 )
+                        },
+                        &1 => {
+                            ( Coord::Y, *value as f32 - win_offset.1 as f32 )
+                        },
+                        _ => {
+                            ( Coord::Z, *value as f32 )
+                        },
                     };
-                    InputFiltered::MouseCoord( coord, *value as f32 )
+                    InputFiltered::MouseCoord( coord, val )
                 },
+                // &glutin::WindowEvent::CursorMoved { ref device_id, ref position/*logical pos*/, .. } => {
+                //     info!("mouse input: {:?}", position );
+                //     InputFiltered::MouseCoord2( position.x as f32 - win_offset.0 as f32,
+                //                                 position.y as f32 - win_offset.1 as f32 )
+                // },
                 &glutin::WindowEvent::KeyboardInput { ref input, .. } => {
                     match input {
                         &glutin::KeyboardInput {

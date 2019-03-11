@@ -442,7 +442,7 @@ impl IGameLogic for GameLogic {
     }
 
     ///computes changed game state given user inputs and current game state
-    fn transition_states( & mut self, inputs: & [ InputFiltered ] ) -> GameStateChangePending {
+    fn transition_states( & mut self, inputs: & [ InputFiltered ], win_offset: (i32,i32), win_size: (u32,u32) ) -> GameStateChangePending {
         //todo
 
         for i in inputs.iter() {
@@ -452,7 +452,8 @@ impl IGameLogic for GameLogic {
                 },
                 _ => {},
             };
-            self._uicam.process( i );
+
+            self._uicam.process( i, win_offset, win_size ); //dummy 0 offsetfor window
         }        
 
         self.set_continue_compute( true );
@@ -514,7 +515,8 @@ impl IGameLogic for GameLogic {
         let axis_right = axis_front.cross( & self._camera._up ).unwrap().normalize().unwrap();
 
         let move_front = axis_front.scale( self._uicam._move.0 as f32 * 0.3 ).unwrap();
-        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.25 ).unwrap();
+        // let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 + 0.25 ).unwrap();
+        let move_right = axis_right.scale( self._uicam._move.1 as f32 * 0.3 ).unwrap();
         let move_up = self._camera._up.normalize().unwrap().scale( self._uicam._move.2 as f32 * 0.3 ).unwrap();
         
         pos = pos.plus( & move_front.plus( & move_right ).unwrap().plus( & move_up ).unwrap() ).unwrap();

@@ -20,8 +20,8 @@ impl Default for TrackBall {
         TrackBall {
             _rot: Default::default(),
             _pos_last: Default::default(),
-            _w: 100.,
-            _h: 100.,
+            _w: 300.,
+            _h: 300.,
         }
     }
 }
@@ -45,15 +45,15 @@ impl TrackBall {
     //     self._pos_last = self.project_cursor_to_hemisphere( pos );
     // }
     ///updates the rotation quaternion based on input cursor positions
-    pub fn move_motion( & mut self, pos_start: & Mat2x1<f32>, pos: & Mat2x1<f32> ){
+    pub fn move_motion( & mut self, pos_start: & Mat2x1<f32>, pos: & Mat2x1<f32>, win_size: (u32,u32) ){
 
-        self._pos_last = self.project_cursor_to_hemisphere( pos_start );
+        self._pos_last = self.project_cursor_to_hemisphere( pos_start, win_size );
         
-        let pos_current = self.project_cursor_to_hemisphere( pos );
+        let pos_current = self.project_cursor_to_hemisphere( pos, win_size );
         
         let delta = pos_current.minus( &self._pos_last ).unwrap();
-        
-        if delta[0].abs() > 0.0001 || delta[1].abs() > 0.0001 || delta[2].abs() > 0.0001 {
+
+        if delta[0].abs() > 0.00001 || delta[1].abs() > 0.00001 || delta[2].abs() > 0.00001 {
             let mag_p_last = self._pos_last.magnitude().unwrap();
             let mag_p = pos_current.magnitude().unwrap();
             assert!( mag_p > 0.99 && mag_p < 1.01);
@@ -61,27 +61,27 @@ impl TrackBall {
             let angle = ( self._pos_last.dot( & pos_current ).unwrap()
                           / ( mag_p * mag_p_last ) )
                 .acos();
+        
             
-            if angle.abs() > 0.0001 {
+            if angle.abs() > 0.00001 {
 
                 let axis = self._pos_last.cross( & pos_current ).unwrap().normalize().unwrap();
-
+                
                 let q = Quat::<f32>::init_from_axis_angle_radian( ( axis, angle ) ).normalize();
-
-                // println!( "axis: {:?}", axis );
-                // println!( "angle: {}", angle );
-
+                
                 self._rot = self._rot.mul( q ).normalize();
             }
         }
     }
     ///project cursor position onto trackball sphere and normalize it to unit vector
-    fn project_cursor_to_hemisphere( & self, pos: & Mat2x1<f32> ) -> Mat3x1<f32> {
+    fn project_cursor_to_hemisphere( & self, pos: & Mat2x1<f32>, win_size: (u32,u32) ) -> Mat3x1<f32> {
 
+        //issue: coordinates from joystick reading is not in the same units as screen units (logicalunits)
         let mut p : Mat3x1<f32> = Default::default();
-        let r = self._w.min( self._h ) * 1.5; //radius of the trackball
-        p[0] = ( pos[0] - self._w / 2. ) / r; //normalize, x-direction
-        p[2] = ( pos[1] - self._h / 2. ) / r; //normalize, z-direction, assumed same as camera up-vector
+        let r = win_size.0.min( win_size.1 ) as f32 * 0.5; //radius of the trackball
+        p[0] = ( pos[0] - win_size.0 as f32 / 2. ) / r; //normalize, x-direction
+        p[2] = ( pos[1] - win_size.1 as f32 / 2. ) / r; //normalize, z-direction, assumed same as camera up-vector
+        
         let mut d = p.magnitude().unwrap();
         if d > 1. {
             p[0] = p[0] / d;
@@ -90,6 +90,7 @@ impl TrackBall {
         }
         let elevation = ( 1. - d * d ).sqrt();
         p[1] = elevation; //y-direction
+        // println!( "p: {:?}, win size: {:?}", p, win_size );
         p
     }
     pub fn get_rot( & self ) -> & Quat<f32> {

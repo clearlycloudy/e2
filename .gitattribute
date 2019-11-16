@@ -3,3 +3,7 @@
 *.blend linguist-detectable=false
 *.3ds linguist-detectable=false
 *.mtl linguist-detectable=false
+*.x linguist-detectable=false
+*.xcf linguist-detectable=false
+*.x3d linguist-detectable=false
+*.fbx linguist-detectable=false

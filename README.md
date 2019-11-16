@@ -2,6 +2,10 @@
 
 A very experimental/proof of concept/minimalistic 3D rendering engine in Rust language. It is very work in process and major work is in under way to factor and lay out engine components.
 
+# Notes
+
+uses nightly Rust
+
 # Current implementations:
 
 matrix utilities

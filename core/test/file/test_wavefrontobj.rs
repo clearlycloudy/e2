@@ -2,6 +2,7 @@ use implement::file::md5common;
 use implement::file::wavefrontobj;
 
 #[test]
+#[ignore]//temporary
 fn test_parse_wavefrontobj(){
 
     let file_content = md5common::file_open( "core/asset/obj/25-vaz-2108/2108_tri.obj" ).expect("file open invalid");

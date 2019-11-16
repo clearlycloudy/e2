@@ -7,3 +7,13 @@
 *.xcf linguist-detectable=false
 *.x3d linguist-detectable=false
 *.fbx linguist-detectable=false
+*.dxf linguist-detectable=false
+*.abs linguist-detectable=false
+*.dae linguist-detectable=false
+*.wrl linguist-detectable=false
+*.ply linguist-detectable=false
+*.stl linguist-detectable=false
+*.tga linguist-detectable=false
+*.zip linguist-detectable=false
+*.fs linguist-detectable=false
+*.vs linguist-detectable=false

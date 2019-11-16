@@ -1,0 +1,5 @@
+*.md5mesh linguist-detectable=false
+*.md5anim linguist-detectable=false
+*.blend linguist-detectable=false
+*.3ds linguist-detectable=false
+*.mtl linguist-detectable=false

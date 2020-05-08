@@ -1,6 +1,6 @@
 # e2r
 
-Experimental game engine in Rust. Work in progress. Goal: scalable client-server style MMO game
+Experimental game engine in Rust. Work in progress. Goal: scalable client-server architecture and game.
 
 # Current implementations:
 
